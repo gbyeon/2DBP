@@ -6,3 +6,5 @@ CMakeFiles
 Build
 build/*
 UserConfig.cmake
+.vscode/*
+.DS_Store
