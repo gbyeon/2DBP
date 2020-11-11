@@ -1,0 +1,432 @@
+/*
+ * master.cpp
+ *
+ *  Created on: Oct 29, 2020
+ *      Author: geunyeongbyeon
+ */
+
+#include "master.h"
+#include "macro.h"
+
+Master::Master()
+{
+    env_ = new IloEnv,
+    m_ = IloModel(*env_);
+    vars_ = masterVars(env_);
+    constrs_ = masterConstrs(env_);
+    xVals_ = IloNumArray (*env_);
+    cx_ = IloNumArray (*env_);
+    cy_ = IloNumArray (*env_);
+    cy_expr_ = IloExpr (*env_);
+    dy_ = IloNumArray (*env_);
+    dy_expr_ = IloExpr (*env_);
+}
+
+/* copy constructor */
+Master::Master(const Master & rhs) :
+env_(rhs.env_),
+m_(rhs.m_),
+vars_(rhs.vars_),
+constrs_(rhs.constrs_),
+xVals_(rhs.xVals_),
+cx_(rhs.cx_),
+cy_(rhs.cy_),
+cy_expr_(rhs.cy_expr_),
+dy_(rhs.dy_),
+dy_expr_(rhs.dy_expr_)
+{
+    /* nothing to do */
+}
+
+Master::~Master()
+{
+    xVals_.end();
+    cx_.end();
+    dy_.end();
+    dy_expr_.end();
+    cy_.end();
+    cy_expr_.end();
+
+    vars_.x.end();
+    vars_.y.end();
+    
+    constrs_.l.end();
+    constrs_.f.end();
+    constrs_.yLBs.end();
+    constrs_.yUBs.end();
+
+    constrs_.xBds.end();
+
+    constrs_.optCuts.end();
+    constrs_.feasCuts.end();
+
+    // if (lazyData_.n_l >= 0) {
+    //     lazyData_.barx.end();
+    //     lazyData_.feas_x.end();
+
+    //     lazyData_.termfP.end();
+    //     lazyData_.termLf.end();
+    //     lazyData_.indicatorTermx.end();
+
+    //     lazyData_.xLBs_ilo.end();
+    //     lazyData_.xUBs_ilo.end();
+
+    //     delete[] lazyData_.xVals;
+    //     delete[] lazyData_.xLBs;
+    //     delete[] lazyData_.xUBs;
+    // }
+    // if (lazyData_.n_f >= 0) {
+    //     lazyData_.bary.end();
+    // }
+
+    cplex_.end();
+    m_.end();
+    env_->end();
+}
+
+void Master::loadProblem (Data &data) {
+
+    n_l_ = data.n_l_;
+    n_f_ = data.n_f_;
+    m_l_ = data.m_l_;
+    m_f_ = data.m_f_;
+
+    xlb_ = data.xlb_;
+    xub_ = data.xub_;
+    ind_col_ = data.ind_col_;
+    scale_col_ = data.scale_col_;
+    map_varind_to_lvarind_ = data.map_varind_to_lvarind_;
+    lObj_constant_ = data.lObj_constant_;
+
+    if (n_l_ > 0) {
+
+        is_integer_ = new int [n_l_];
+        llObj_ = new double [n_l_];
+
+        is_integer_ = data.is_integer_;
+        llObj_ = data.llObj_;
+    }   
+    
+    ylb_cnt_ = data.ylb_cnt_;
+    yub_cnt_ = data.yub_cnt_;
+
+    if (ylb_cnt_ > 0) {
+        ylb_ind_ = new int [ylb_cnt_];
+        ylb_coef_ = new double [ylb_cnt_];
+
+        ylb_ind_ = data.ylb_ind_;
+        ylb_coef_ = data.ylb_coef_;
+    }
+
+    if (yub_cnt_ > 0) {
+        yub_ind_ = new int [yub_cnt_];
+        yub_coef_ = new double [yub_cnt_];
+
+        yub_ind_ = data.yub_ind_;
+        yub_coef_ = data.yub_coef_;
+    }
+
+    if (n_f_ > 0) {
+        fObj_ = new double [n_f_];
+        fObj_ = data.fObj_;
+
+        lfObj_ = new double [n_f_];
+        lfObj_ = data.lfObj_;
+    }
+
+     if (m_f_ > 0) {
+        
+        fC_rhs_ = new double [m_f_];
+        fC_rhs_ = data.fC_rhs_;
+
+        fC_fV_cnt_ = new int [m_f_];
+        fC_lV_cnt_ = new int [m_f_];
+
+        fC_fV_cnt_ = data.fC_fV_cnt_;
+        fC_lV_cnt_ = data.fC_lV_cnt_;
+
+        fC_fV_coef_ = new double * [m_f_];
+        fC_fV_ind_ = new int * [m_f_];
+        
+        fC_lV_coef_ = new double * [m_f_];
+        fC_lV_ind_ = new int * [m_f_];
+
+        for (int i = 0; i < m_f_; i++)
+        {
+            if (fC_fV_cnt_[i] > 0) {
+                fC_fV_coef_[i] = new double [fC_fV_cnt_[i]];
+                fC_fV_ind_[i] = new int [fC_fV_cnt_[i]];
+
+                fC_fV_coef_[i] = data.fC_fV_coef_[i];
+                fC_fV_ind_[i] = data.fC_fV_ind_[i];
+            }
+
+            if (fC_lV_cnt_[i] > 0) {
+                fC_lV_coef_[i] = new double [fC_lV_cnt_[i]];
+                fC_lV_ind_[i] = new int [fC_lV_cnt_[i]];
+
+                fC_lV_coef_[i] = data.fC_lV_coef_[i];
+                fC_lV_ind_[i] = data.fC_lV_ind_[i];
+            }
+        }
+    }
+
+    if (m_l_ > 0) {
+        
+        lC_rhs_ = new double [m_l_];
+        lC_rhs_ = data.lC_rhs_;
+
+        lC_fV_cnt_ = new int [m_l_];
+        lC_lV_cnt_ = new int [m_l_];
+
+        lC_fV_cnt_ = data.lC_fV_cnt_;
+        lC_lV_cnt_ = data.lC_lV_cnt_;
+
+        lC_fV_coef_ = new double * [m_l_];
+        lC_fV_ind_ = new int * [m_l_];
+        
+        lC_lV_coef_ = new double * [m_l_];
+        lC_lV_ind_ = new int * [m_l_];
+
+        for (int i = 0; i < m_l_; i++)
+        {
+            if (lC_fV_cnt_[i] > 0) {
+                lC_fV_coef_[i] = new double [lC_fV_cnt_[i]];
+                lC_fV_ind_[i] = new int [lC_fV_cnt_[i]];
+
+                lC_fV_coef_[i] = data.lC_fV_coef_[i];
+                lC_fV_ind_[i] = data.lC_fV_ind_[i];
+            }
+
+            if (lC_lV_cnt_[i] > 0) {
+                lC_lV_coef_[i] = new double [lC_lV_cnt_[i]];
+                lC_lV_ind_[i] = new int [lC_lV_cnt_[i]];
+
+                lC_lV_coef_[i] = data.lC_lV_coef_[i];
+                lC_lV_ind_[i] = data.lC_lV_ind_[i];
+            }
+        }
+    }
+}
+
+/* master problem do not need to have y variables, leader and follower constraints, and t >= cy 
+ * having them in the model does not compromise optimality 
+ * current version includes them in the master to accelerate the method
+ */
+void Master::createProblem () {
+
+    int i, j;
+    
+#ifdef M_BUILD_DEBUG
+    /* tic */
+    auto start_t = chrono::system_clock::now();
+#endif
+
+    addxVars ();
+    addyVars ();
+    addtVar ();
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in adding vars to master: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* add leader constraints: Gx + Gy >= h */
+    addlConstr();
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in addlConstr to master: " << ticToc_.count() << endl;    
+    /* tic*/
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* add follower constraints with x: Ax + By >= b */
+    addfConstr();
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in addfConstr to mater: " << ticToc_.count() << endl;
+    /* tic*/
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* add bound constraints on x */
+    addxBdsConstr();
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in addxBdsConstr to master: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* add bound constraints on y */
+    addyBdsConstr();
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in adding yBdconstrs to master: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* define cplex */
+    cplex_ = IloCplex(m_);
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in defining master cplex: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* set objective function: minimized cx + t */
+    m_.add(IloMinimize(*env_));
+    for (int i = 0; i < n_l_; i++) {
+        cx_.add(llObj_[i]);
+    }
+    cplex_.getObjective().setLinearCoef(vars_.t, 1);
+    cplex_.getObjective().setLinearCoefs(vars_.x, cx_);
+    cplex_.getObjective().setConstant(lObj_constant_);
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in setting master obj: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* set cplex parameters */
+    // if (!sett.is_callback)
+        // cplex_.setOut(env_->getNullStream());
+
+    cplex_.setParam(IloCplex::Param::MIP::Tolerances::Integrality, 1e-9);
+//    master.cplex.setParam(IloCplex::Param::MIP::Tolerances::Linearization, 1e-9);
+    cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
+
+    // cplex_.setParam(IloCplex::Param::Threads, 1);
+//    master.cplex.setParam(IloCplex::Param::Preprocessing::Presolve, IloFalse);
+
+    // cplex_.setParam(IloCplex::Param::Parallel, CPX_PARALLEL_OPPORTUNISTIC);
+    // cplex_.setParam(IloCplex::Param::MIP::Strategy::HeuristicFreq, 200);//100); //-1);
+    cplex_.setParam(IloCplex::Param::MIP::Strategy::VariableSelect, CPX_VARSEL_STRONG);
+    cplex_.setParam(IloCplex::Param::MIP::Strategy::NodeSelect, CPX_NODESEL_BESTEST);
+    // cplex_.setParam(IloCplex::Param::MIP::Strategy::Probe, 3);
+    // cplex_.setParam(IloCplex::Param::MIP::Strategy::PresolveNode, -1);
+    cplex_.setParam(IloCplex::Param::RootAlgorithm, CPX_ALG_BARRIER);
+
+
+    /* set branching priority */
+    /* if x appears in follower problem, increase priority */
+    vector<int> priority(n_l_, 1);
+    for (i = 0; i < m_f_; i++) {
+        for (j = 0; j < fC_lV_cnt_[i]; j++) {
+            priority[fC_lV_ind_[i][j]] = 2;
+        }
+    }
+    for (i = 0; i < n_l_; i++)
+        cplex_.setPriority(vars_.x[i], priority[i]);
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in setting branching priority of master: " << ticToc_.count() << endl;
+    /* tic */
+    start_t = chrono::system_clock::now();
+#endif
+
+    /* TO ACCELERATE, NOT NECESSARY: add y vars to master */
+    for (i = 0; i < n_f_; i++) {
+        cy_.add(lfObj_[i]);
+    }
+    cy_expr_.setLinearCoefs(vars_.y, cy_);
+    m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
+
+#ifdef M_BUILD_DEBUG
+    /* toc */
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "time in add yobj constr to master: " << ticToc_.count() << endl;
+#endif
+
+    for (i = 0; i < n_f_; i++)
+        dy_.add(fObj_[i]);
+    dy_expr_.setLinearCoefs(vars_.y, dy_);
+
+//    cplex_.exportModel("master.lp");
+
+}
+
+int Master::solve() {
+    auto start_t = chrono::system_clock::now();
+
+    if (!cplex_.solve()) {
+        env_->error() << "Failed to optimize master." << endl;
+        throw (-1);
+    }
+
+    if (cplex_.getStatus() != IloAlgorithm::Status::Optimal
+        && cplex_.getStatus() != IloAlgorithm::Status::Unbounded ) {
+        cout << "master is terminated w/ status " << cplex_.getStatus() << endl;
+        return 1;
+    }
+
+    if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
+        objVal_ = -3e+6;
+    else
+        objVal_ = cplex_.getObjValue();
+
+//    env.out() << "Solution status = " << master.cplex.getStatus() << endl;
+//    env.out() << "Solution value = " << master.cplex.getObjValue() << endl;
+    cplex_.getValues(xVals_, vars_.x);
+    tVal_ = cplex_.getValue(vars_.t);
+//    env.out() << "Values = " << master.xVals << endl;
+//    env.out() << "Value = " << master.tVal << endl;
+
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "Master obj: " << objVal_ << endl;
+    cout << "time in solving master: " << ticToc_.count() << endl;
+
+    return 0;
+}
+
+void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower){
+    
+    auto start_t = chrono::system_clock::now();
+
+//     // 왜 inintialize 해야되는거지??
+// //    if (initializeBenders (hpp, master, f, s1, s2, ticToc_.count(), aInfo, iInfo, instance, sett))
+// //        return 1;
+//     // or using HPP sol and setStart()?
+    lazyData_ = LazyData (n_l_, n_f_, *env_);
+    cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+    // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+    cplex_.use(incumbentUpdateCallback(*env_, vars_.x, lazyData_));
+    // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+    cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, leaderFollower));
+    
+    if (!cplex_.solve()) {
+        env_->error() << "Failed to optimize master." << endl;
+        throw (-1);
+    }
+
+    if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
+        objVal_ = -3e+6;
+    else
+        objVal_ = cplex_.getObjValue();
+    bestObjVal_ = cplex_.getBestObjValue();
+    cplex_.getValues(xVals_, vars_.x);
+    tVal_ = cplex_.getValue(vars_.t);
+    gap_ = cplex_.getMIPRelativeGap();
+
+    ticToc_ = chrono::system_clock::now() - start_t;
+}

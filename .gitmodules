@@ -1,0 +1,4 @@
+[submodule "extra/CoinUtils"]
+	path = extra/CoinUtils
+	url = https://github.com/coin-or/CoinUtils.git
+	branch = stable/2.11
