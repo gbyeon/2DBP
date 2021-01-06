@@ -1,30 +1,30 @@
 /*
- * followerMC.cpp
+ * follower.cpp
  *
- *  Created on: Nov 9, 2020
+ *  Created on: Oct 29, 2020
  *      Author: geunyeongbyeon
  */
 #undef NDEBUG
-// #define FMC_SOLVE_DEBUG
+// #define F_SOLVE_DEBUG
 
-#include "followerMC.h"
+#include "follower.h"
 #include "macro.h"
 
-FollowerMC::FollowerMC()
+Follower::Follower()
 {
     env_ = new IloEnv;
     m_ = IloModel(*env_);
-    vars_ = fMCVars(env_);
-    constrs_ = fMCConstrs(env_);
+    vars_ = fVars(env_);
+    constrs_ = fConstrs(env_);
     yVals_ = IloNumArray (*env_);
-    nuVals_ = vector<IloNumArray> (4);
-    for (int i = 0; i < 4; i++)
-        nuVals_[i] = IloNumArray (*env_);
+    psiVals_ = IloNumArray (*env_);
+    psiVal_yLBs_ = IloNumArray (*env_);
+    psiVal_yUBs_ = IloNumArray (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
 }
 
-FollowerMC::FollowerMC(int n_l,
+Follower::Follower(int n_l,
                 int n_f,
                 int m_f,
                 int ylb_cnt,
@@ -103,12 +103,12 @@ n_l_(n_l), n_f_(n_f), m_f_(m_f), ylb_cnt_(ylb_cnt), yub_cnt_(yub_cnt)
 
     env_ = new IloEnv;
     m_ = IloModel(*env_);
-    vars_ = fMCVars(env_);
-    constrs_ = fMCConstrs(env_);
+    vars_ = fVars(env_);
+    constrs_ = fConstrs(env_);
     yVals_ = IloNumArray (*env_);
-    nuVals_ = vector<IloNumArray> (4);
-    for (int i = 0; i < 4; i++)
-        nuVals_[i] = IloNumArray (*env_);
+    psiVals_ = IloNumArray (*env_);
+    psiVal_yLBs_ = IloNumArray (*env_);
+    psiVal_yUBs_ = IloNumArray (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
 
@@ -116,13 +116,15 @@ n_l_(n_l), n_f_(n_f), m_f_(m_f), ylb_cnt_(ylb_cnt), yub_cnt_(yub_cnt)
 }
 
 /* copy constructor */
-FollowerMC::FollowerMC(const FollowerMC & rhs) :
+Follower::Follower(const Follower & rhs) :
 env_(rhs.env_),
 m_(rhs.m_),
 vars_(rhs.vars_),
 constrs_(rhs.constrs_),
 yVals_(rhs.yVals_),
-nuVals_(rhs.nuVals_),
+psiVals_(rhs.psiVals_),
+psiVal_yLBs_(rhs.psiVal_yLBs_),
+psiVal_yUBs_(rhs.psiVal_yUBs_),
 dy_(rhs.dy_),
 dy_expr_(rhs.dy_expr_),
 xbar_coef_(rhs.xbar_coef_)
@@ -130,16 +132,17 @@ xbar_coef_(rhs.xbar_coef_)
     /* nothing to do */
 }
 
-FollowerMC::~FollowerMC()
+Follower::~Follower()
 {
     yVals_.end();
-    for (int i = 0; i < 4; i++)
-        nuVals_[i].end();
+    psiVals_.end();
+    psiVal_yLBs_.end();
+    psiVal_yUBs_.end();
     dy_.end();
     dy_expr_.end();
     
     vars_.y.end();
-    constrs_.fFMC.end();
+    constrs_.fF.end();
     constrs_.yLBs.end();
     constrs_.yUBs.end();
 
@@ -150,7 +153,7 @@ FollowerMC::~FollowerMC()
     delete[] xbar_coef_;
 }
 
-void FollowerMC::loadProblem (Data &data) {
+void Follower::loadProblem (Data &data) {
 
     n_l_ = data.n_l_;
     n_f_ = data.n_f_;
@@ -219,7 +222,7 @@ void FollowerMC::loadProblem (Data &data) {
     if (n_l_ > 0) xbar_coef_ = new double [n_l_];
 }
 
-void FollowerMC::createProblem () {
+void Follower::createProblem () {
 #ifdef DATA_DEBUG
     for (int i = 0; i < m_f_; i++) {
         for (int j = 0; j < fC_fV_cnt_[i]; j++) {
@@ -239,15 +242,9 @@ void FollowerMC::createProblem () {
     
     /* add follower variable y */
     addyVars();
-
-    /* add dual variables nu for McComick constraints */
-    addnuVars();
     
-    /* add follower constraint without x and with nu: By >= b + K^T nu */
-    addfFMCConstr();
-
-    /* add nu constraints: nu_0 + nu_1 - nu_2 - nu_3 == 1 */
-    addnuConstr();
+    /* add follower constraint without x: By >= b */
+    addfFConstr();
     
     /* add bound constraints on y */
     addyBdsConstr();
@@ -265,78 +262,60 @@ void FollowerMC::createProblem () {
     /* turn off display */
     cplex_.setOut(env_->getNullStream());
 
-    /* to distinguish infeasible vs unboundedness */
-    /* no unboundedness case as master has the follower constraint */
-    // cplex_.setParam(IloCplex::Param::Preprocessing::Presolve, IloFalse);
-    /* setting feas tol */
-    cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
-
 //    cplex_.setParam(IloCplex::Param::TimeLimit, 10);
-    // cplex_.exportModel("followerMC.lp");
+    // cplex_.exportModel("follower.lp");
 
-   // dummy r for unbounded case
-    vars_.r = IloNumVar (*env_, -IloInfinity, IloInfinity, ILOFLOAT, "r");
-    m_.add(vars_.r);
-    for (i = 0; i < constrs_.fFMC.getSize(); i++) {
-       constrs_.fFMC[i].setLinearCoef(vars_.r, -constrs_.fFMC[i].getLB());
-       constrs_.fFMC[i].setLB(0);
-    } for (i = 0; i < constrs_.nu.getSize(); i++) {
-       constrs_.nu[i].setLinearCoef(vars_.r, -constrs_.nu[i].getLB());
-       constrs_.nu[i].setLB(0);
-       constrs_.nu[i].setUB(0);
-    } for (i = 0; i < constrs_.yUBs.getSize(); i++) {
-       constrs_.yUBs[i].setLinearCoef(vars_.r, -constrs_.yUBs[i].getLB());
-       constrs_.yUBs[i].setLB(0);
-    } for (i = 0; i < constrs_.yLBs.getSize(); i++) {
-       constrs_.yLBs[i].setLinearCoef(vars_.r, -constrs_.yLBs[i].getLB());
-       constrs_.yLBs[i].setLB(0);
-    }
-    constrs_.r = IloRange(*env_, 1, vars_.r, 1, "r");
-    m_.add(constrs_.r);
-    
-    IloExpr lhs(*env_);
-    for (i = 0; i < n_f_; i++) {
-        lhs += vars_.y[i];
-    }
-    for (i = 0; i < vars_.nu[0].getSize(); i++) {
-        lhs += vars_.nu[0][i] + vars_.nu[1][i] + vars_.nu[2][i] + vars_.nu[3][i];
-    }
-    constrs_.normRay = IloRange(*env_, -1, lhs, 1, "normRay");
-    lhs.end();
+//    // dummy r
+//    vars_.r = IloNumVar (env_->, 0, 0, ILOFLOAT, "r");
+//    m_.add(vars_.r);
+//    IloInt i;
+//    for (i = 0; i < constrs_.fF.getSize(); i++)
+//        fF[i].setLinearCoef(vars_.r, 1);
 
-    // cplex_.exportModel("followerMC2.lp");
 }
 
-void FollowerMC::updateProblem (double* xVals) {
+void Follower::updateProblem (double* xVals) {
 
-    IloNumArray objChg_nu1(*env_);
-    IloNumArray objChg_nu2(*env_);
+    double rhsChg;
 
     int i, j;
 
-    /* TODO: do not update all. only for those updated */
     for (i = 0; i < m_f_; i++) {
+
+        rhsChg = fC_rhs_[i];
+
         for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            if (fC_lV_coef_[i][j] > 0) {
-                objChg_nu1.add(-fC_lV_coef_[i][j] * psiUB_ * (xVals[fC_lV_ind_[i][j]] - 1));
-                objChg_nu2.add(fC_lV_coef_[i][j] * psiUB_ * xVals[fC_lV_ind_[i][j]]);
-            } else {
-                objChg_nu1.add(fC_lV_coef_[i][j] * psiUB_ * (xVals[fC_lV_ind_[i][j]] - 1));
-                objChg_nu2.add(-fC_lV_coef_[i][j] * psiUB_ * xVals[fC_lV_ind_[i][j]]);
-            }
+            rhsChg -= fC_lV_coef_[i][j] * xVals[fC_lV_ind_[i][j]];
         }
+
+        constrs_.fF[i].setLB(rhsChg);
     }
-    cplex_.getObjective().setLinearCoefs(vars_.nu[1], objChg_nu1);
-    cplex_.getObjective().setLinearCoefs(vars_.nu[2], objChg_nu2);
-
-    objChg_nu1.end();
-    objChg_nu2.end();
-
-    // cplex_.exportModel("followerMC_updated.lp");
 }
 
-int FollowerMC::solve () {
-#ifdef FMC_SOLVE_DEBUG
+void Follower::updateUBProblem (double* xUBs, double* xLBs) {
+#ifdef F_SOLVE_DEBUG
+cout << "solve follower UB: ";
+#endif 
+    double rhsChg;
+
+    int i, j;
+
+    for (i = 0; i < m_f_; i++) {
+
+        rhsChg = fC_rhs_[i];
+
+        for (j = 0; j < fC_lV_cnt_[i]; j++) {
+            if (fC_lV_coef_[i][j] * xLBs[fC_lV_ind_[i][j]] < fC_lV_coef_[i][j] * xUBs[fC_lV_ind_[i][j]])
+                rhsChg -= fC_lV_coef_[i][j] * xLBs[fC_lV_ind_[i][j]];
+            else
+                rhsChg -= fC_lV_coef_[i][j] * xUBs[fC_lV_ind_[i][j]];
+        }
+        constrs_.fF[i].setLB(rhsChg);
+    }
+}
+
+int Follower::solve () {
+#ifdef F_SOLVE_DEBUG
     /* tic */
     auto start_t = chrono::system_clock::now();
 #endif
@@ -348,94 +327,84 @@ int FollowerMC::solve () {
     }
     
     status_ = cplex_.getStatus();
-    if (status_ == IloAlgorithm::Status::Unbounded) {
+    getResults();
 
-        constrs_.r.setLB(0);
-        constrs_.r.setUB(0);
-        m_.add(constrs_.normRay);
+#ifdef F_SOLVE_DEBUG
+    ticToc_ = (chrono::system_clock::now() - start_t);
+    cout << "Follower has optimum: " << objVal_ << ", time: " << ticToc_.count() << endl;
+#endif
 
-        // cplex_.exportModel("followerMC_ubd.lp");
-
-        if (!cplex_.solve()) {
-            env_->error() << "Failed to optimize FollowerMC." << endl;
-            throw (-1);
-        }
-
-        getResults();
-
-        cplex_.clear();
-        constrs_.r.setLB(1);
-        constrs_.r.setUB(1);
-
-        m_.remove(constrs_.normRay);
-
-        #ifdef FMC_SOLVE_DEBUG
-            ticToc_ = (chrono::system_clock::now() - start_t);
-            cout << "FollowerMC is unbounded, FollowerMC bd opt: " << objVal_ << ", time: " << ticToc_.count() << endl;
-        #endif
-
-    } else if (status_ == IloAlgorithm::Status::Optimal) {
-
-        getResults();
-
-        #ifdef FMC_SOLVE_DEBUG
-            ticToc_ = (chrono::system_clock::now() - start_t);
-            cout << "FollowerMC has optimum: " << objVal_ << ", time: " << ticToc_.count() << endl;
-        #endif
-
-
-    } else {
-        cout << "FollowerMC terminated with status " << cplex_.getStatus() << endl;
-        return 1;
-    }
     return 0;
 }
 
-void FollowerMC::getResults () {
+void Follower::getResults () {
 
     objVal_ = cplex_.getObjValue();
 
     cplex_.getValues(yVals_, vars_.y);
-    // for (int i = 0; i < 4; i++)
-        // cplex_.getValues(nuVals_[i], vars_.nu[i]);
-    cplex_.getValues(nuVals_[1], vars_.nu[1]);
-    cplex_.getValues(nuVals_[2], vars_.nu[2]);
+    cplex_.getDuals(psiVals_, constrs_.fF);
+    cplex_.getDuals(psiVal_yLBs_, constrs_.yLBs);
+    cplex_.getDuals(psiVal_yUBs_, constrs_.yUBs);
 }
 
-void FollowerMC::getBendersTerms(IloExpr &termsfPMC, IloNumVarArray &xVars, IloNumArray &barx) {
+double Follower::getDyVal(IloNumArray &yVals) {
+    int i; 
+    double Dy = 0; 
+    for (i = 0; i < n_f_; i++)
+    {
+        Dy += fObj_[i] * yVals[i];
+    }
+
+    return Dy;
+}
+
+void Follower::getBendersTerms(IloExpr &termsfP, IloNumVarArray &xVars, double * xVals) {
     
+    int num;
     int i, j; 
+    
+    double psiVals[m_f_];
+    double psiVal_yLBs [ylb_cnt_];
+    double psiVal_yUBs [yub_cnt_];
+
+    for (i = 0; i < m_f_; i++) {
+        psiVals[i] = psiVals_[i];
+    }
+    for (i = 0; i < ylb_cnt_; i++) {
+        psiVal_yLBs[i] = psiVal_yLBs_[i];
+    }
+    for (i = 0; i < yub_cnt_; i++) {
+        psiVal_yUBs[i] = psiVal_yUBs_[i];
+    }
 
     for (i = 0; i < n_l_; i++)
         xbar_coef_[i] = 0;
     constant_ = 0;
 
-    int pos = 0;
     for (i = 0; i < m_f_; i++) {
+
+        constant_ += fC_rhs_[i] * psiVals[i];
+
         for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            if (fC_lV_coef_[i][j] > 0) {
-                xbar_coef_[fC_lV_ind_[i][j]] += fC_lV_coef_[i][j] * psiUB_ * (nuVals_[2][pos] - nuVals_[1][pos]);
-                constant_ += nuVals_[1][pos] * fC_lV_coef_[i][j] * psiUB_;
-            } else {
-                xbar_coef_[fC_lV_ind_[i][j]] += fC_lV_coef_[i][j] * psiUB_ * (nuVals_[1][pos] - nuVals_[2][pos]);
-                constant_ -= nuVals_[1][pos] * fC_lV_coef_[i][j] * psiUB_;
-            }
-            pos++;
+            xbar_coef_[fC_lV_ind_[i][j]] -= fC_lV_coef_[i][j] * psiVals[i];
         }
     }
 
-    for (i = 0; i < n_f_; i++) {
-        constant_ += fObj_[i] * yVals_[i];
+    for (i = 0; i < ylb_cnt_; i++) {
+        constant_ += ylb_coef_[i] * psiVal_yLBs[i];
     }
-    
+    for (i = 0; i < yub_cnt_; i++) {
+        constant_ += -yub_coef_[i] * psiVal_yUBs[i];
+    }
+
     for (j = 0; j < n_l_; j++) {
-        termsfPMC += xbar_coef_[j] * xVars[j];
+        termsfP += xbar_coef_[j] * xVars[j];
     }
-    termsfPMC += constant_;
+    termsfP += constant_;
 
     check_ = 0;
     for (j = 0; j < n_l_; j++) {
-        check_ += xbar_coef_[j] * barx[j];
+        check_ += xbar_coef_[j] * xVals[j];
     }
     check_ += constant_;
 

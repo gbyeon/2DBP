@@ -511,7 +511,7 @@ void LeaderFollower::getResults () {
     cplex_.getDuals(psiVal_yUBs_, constrs_.yUBs);
 }
 
-void LeaderFollower::getBendersTerms (IloExpr &termLf, IloNumVarArray &xVars, IloNumArray &barx) {
+void LeaderFollower::getBendersTerms (IloExpr &termLf, IloNumVarArray &xVars, double *xVals) {
 
     int num;
     int i, j; 
@@ -572,7 +572,7 @@ void LeaderFollower::getBendersTerms (IloExpr &termLf, IloNumVarArray &xVars, Il
 //    if (sett.outputConsole) {
         check_ = 0;
         for (j = 0; j < n_l_; j++) {
-            check_ += xbar_coef_[j] * barx[j];
+            check_ += xbar_coef_[j] * xVals[j];
         }
         check_ += constant_;
 //    }

@@ -1,15 +1,24 @@
 set(SRC
-    master.cpp
-    follower.cpp
-    followerMC.cpp
     data.cpp
-    hpp.cpp
-    callback.cpp
-    leaderfollower.cpp)
+    callbacks/lazyCBBenders.cpp
+    callbacks/lazyCBBendersMC.cpp
+    callbacks/heuristicCBIncumbentUpdate.cpp
+    callbacks/usercutCBfUB.cpp
+    callbacks/usercutCBfUBx.cpp
+    callbacks/usercutCBBendersMC.cpp
+    models/hpp.cpp
+    models/master.cpp
+    models/follower.cpp
+    models/followerMC.cpp
+    models/followerX.cpp
+    models/leaderfollower.cpp
+    )
 
 set(INC_DIR 
     .
-    ${DEPEND_DIR}/include/coin-or)
+    ${DEPEND_DIR}/include/coin-or
+    models
+    callbacks)
 set(LIBS 
 	${DEPEND_DIR}/lib/libCoinUtils.a 
 	${ZLIB_LIBRARIES}

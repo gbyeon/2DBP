@@ -119,6 +119,14 @@ int main (int argc, char *argv[]) {
     follower.loadProblem(data);
     follower.createProblem();
     
+    /* create follower problem with x:
+     * min dy : Ax + By >= b      (f)
+     *          x, y bounds       (yLbs, yUbs)
+     */
+    FollowerX followerx;
+    followerx.loadProblem(data);
+    followerx.createProblem();
+    
     /* create leaderFollower problem:
      * min c_y y : G_y y >= h (-G_x x)  (lF)
      *             B y >= b (-Ax)       (fF)
@@ -149,7 +157,7 @@ int main (int argc, char *argv[]) {
     master.setTimeLimit(3600);
 
     /* solve using Benders implemented with callback */
-    master.solveCallback(follower, followerMC, leaderFollower);
+    master.solveCallback(follower, followerMC, followerx, leaderFollower);
     
     /* get results */
     cout << "objVal: " << master.getObjVal() << endl;

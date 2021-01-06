@@ -48,7 +48,7 @@ public:
     
     int solve();
     
-    void getBendersTerms(IloExpr &termsfP, IloNumVarArray &xVars, IloNumArray &barx);
+    void getBendersTerms(IloExpr &termsfP, IloNumVarArray &xVars, double * xVals);
 
     void getResults();
     IloCplex * getCplexPtr() {return &cplex_;};

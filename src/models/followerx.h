@@ -1,22 +1,22 @@
 /*
- * follower.h
+ * followerx.h
  *
- *  Created on: Nov 7, 2020
+ *  Created on: Nov 13, 2020
  *      Author: geunyeongbyeon
  */
 
-#ifndef BILEVEL_FOLLOWER_H
-#define BILEVEL_FOLLOWER_H
+#ifndef BILEVEL_FOLLOWERX_H
+#define BILEVEL_FOLLOWERX_H
 
 #include "data.h"
 
-class Follower {
+class FollowerX {
 public:
 	/* default constructor */
-	Follower();
+	FollowerX();
 
     /* constructor */
-    Follower(int n_l,
+    FollowerX(int n_l,
             int n_f,
             int m_f,
             int ylb_cnt,
@@ -35,62 +35,56 @@ public:
             int ** fC_lV_ind);
 
 	/* copy constructor */
-	Follower(const Follower & rhs);
+	FollowerX(const FollowerX & rhs);
 
 	/* default destructor */
-	~Follower();
+	~FollowerX();
 
 public:
     void loadProblem(Data &data);
     void createProblem();
     
-    void updateProblem(double* xVals);
-    void updateUBProblem(double* xUBs, double* xLBs);
+    void updateUBProblem(IloNumArray &xUBs, IloNumArray &xLBs);
     
     int solve();
-    
-    void getBendersTerms(IloExpr &termsfP, IloNumVarArray &xVars, IloNumArray &barx);
 
     void getResults();
-    double getDy(IloNumArray &yVals);
     IloCplex * getCplexPtr() {return &cplex_;};
     double getObjVal() {return objVal_;};
     double getStatus() {return status_;};
-    double getbigM() {return M_;};
-    double getCheck() {return check_;};
-    IloNumArray * getpsiValsPtr() {return &psiVals_;};
-    IloNumArray * getpsiValsPtr_yLBs() {return &psiVal_yLBs_;};
-    IloNumArray * getpsiValsPtr_yUBs() {return &psiVal_yUBs_;};
     IloExpr * getdyExprPtr() {return &dy_expr_;};
-
-    void setfUb(double M) {M_ = M;};
+    double getDyVal(IloNumArray &yVals);
 
 private:
 
-    struct fVars {
+    struct fXVars {
 
         IloNumVarArray y;
+        IloNumVarArray x;
 
-        fVars (IloEnv * env) {
+        fXVars (IloEnv * env) {
             y = IloNumVarArray (*env);
+            x = IloNumVarArray (*env);
         };
 
-        fVars() {};
+        fXVars() {};
     };
 
-    struct fConstrs {
+    struct fXConstrs {
 
-    IloRangeArray fF; 
+    IloRangeArray f; 
     IloRangeArray yLBs, yUBs;
+    IloRangeArray xBds;
 
-    fConstrs (IloEnv * env){
+    fXConstrs (IloEnv * env){
 
-        fF = IloRangeArray(*env);
+        f = IloRangeArray(*env);
         yLBs = IloRangeArray(*env);
         yUBs = IloRangeArray(*env);
+        xBds = IloRangeArray(*env);
     };
 
-    fConstrs() {};
+    fXConstrs() {};
     };  
 
     /* data */
@@ -105,6 +99,16 @@ private:
     int yub_cnt_;
     int * yub_ind_;
     double * yub_coef_;
+
+    /* x bounds data */
+    vector<vector<int>> ind_col_;
+    vector<vector<double>> scale_col_;
+    vector<double> xlb_;
+    vector<double> xub_;
+    map<int,int> map_varind_to_lvarind_;
+
+    /* integer var indicator for leader var */
+    int * is_integer_;
     
     /* objective function data */
     double * fObj_;     /* d for dy */
@@ -123,8 +127,8 @@ private:
     int ** fC_lV_ind_;
 
     /* opt members */
-    fVars vars_;
-    fConstrs constrs_;
+    fXVars vars_;
+    fXConstrs constrs_;
 
     IloEnv * env_;
     IloModel m_;
@@ -136,15 +140,8 @@ private:
     IloAlgorithm::Status status_;
     IloNum objVal_;
     IloNumArray yVals_;
-    IloNumArray psiVals_;
-    IloNumArray psiVal_yLBs_, psiVal_yUBs_;
-
-    double M_;
-
-    double * xbar_coef_;
-    IloNum check_, constant_;
 
     chrono::duration<double> ticToc_;
 };
 
-#endif //BILEVEL_FOLLOWER_H
+#endif //BILEVEL_FOLLOWERX_H

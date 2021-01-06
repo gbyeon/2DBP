@@ -60,25 +60,6 @@ Master::~Master()
     constrs_.optCuts.end();
     constrs_.feasCuts.end();
 
-    // if (lazyData_.n_l >= 0) {
-    //     lazyData_.barx.end();
-    //     lazyData_.feas_x.end();
-
-    //     lazyData_.termfP.end();
-    //     lazyData_.termLf.end();
-    //     lazyData_.indicatorTermx.end();
-
-    //     lazyData_.xLBs_ilo.end();
-    //     lazyData_.xUBs_ilo.end();
-
-    //     delete[] lazyData_.xVals;
-    //     delete[] lazyData_.xLBs;
-    //     delete[] lazyData_.xUBs;
-    // }
-    // if (lazyData_.n_f >= 0) {
-    //     lazyData_.bary.end();
-    // }
-
     cplex_.end();
     m_.end();
     env_->end();
@@ -385,12 +366,8 @@ int Master::solve() {
     else
         objVal_ = cplex_.getObjValue();
 
-//    env.out() << "Solution status = " << master.cplex.getStatus() << endl;
-//    env.out() << "Solution value = " << master.cplex.getObjValue() << endl;
     cplex_.getValues(xVals_, vars_.x);
     tVal_ = cplex_.getValue(vars_.t);
-//    env.out() << "Values = " << master.xVals << endl;
-//    env.out() << "Value = " << master.tVal << endl;
 
     ticToc_ = (chrono::system_clock::now() - start_t);
     cout << "Master obj: " << objVal_ << endl;
@@ -399,20 +376,23 @@ int Master::solve() {
     return 0;
 }
 
-void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower){
+void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower){
     
     auto start_t = chrono::system_clock::now();
 
-//     // 왜 inintialize 해야되는거지??
-// //    if (initializeBenders (hpp, master, f, s1, s2, ticToc_.count(), aInfo, iInfo, instance, sett))
-// //        return 1;
-//     // or using HPP sol and setStart()?
     lazyData_ = LazyData (n_l_, n_f_, *env_);
+    /* lazyCBBenders.h */
     cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+    /* lazyCBBendersMC.h */
     // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+    /* heuristicCBIncumbentUpdate.h */
     cplex_.use(incumbentUpdateCallback(*env_, vars_.x, lazyData_));
+    /* usercutCBBendersMC.h */
     // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
-    cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, leaderFollower));
+    /* usercutCBfUB.h */
+    cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
+    /* usercutCBfUBx.h */
+    // cplex_.use(BendersUserCallbackX(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, followerx));
     
     if (!cplex_.solve()) {
         env_->error() << "Failed to optimize master." << endl;

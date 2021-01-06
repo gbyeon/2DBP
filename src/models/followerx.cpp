@@ -1,30 +1,27 @@
 /*
- * follower.cpp
+ * followerX.cpp
  *
- *  Created on: Oct 29, 2020
+ *  Created on: Nov 13, 2020
  *      Author: geunyeongbyeon
  */
 #undef NDEBUG
 // #define F_SOLVE_DEBUG
 
-#include "follower.h"
+#include "followerx.h"
 #include "macro.h"
 
-Follower::Follower()
+FollowerX::FollowerX()
 {
     env_ = new IloEnv;
     m_ = IloModel(*env_);
-    vars_ = fVars(env_);
-    constrs_ = fConstrs(env_);
+    vars_ = fXVars(env_);
+    constrs_ = fXConstrs(env_);
     yVals_ = IloNumArray (*env_);
-    psiVals_ = IloNumArray (*env_);
-    psiVal_yLBs_ = IloNumArray (*env_);
-    psiVal_yUBs_ = IloNumArray (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
 }
 
-Follower::Follower(int n_l,
+FollowerX::FollowerX(int n_l,
                 int n_f,
                 int m_f,
                 int ylb_cnt,
@@ -103,61 +100,60 @@ n_l_(n_l), n_f_(n_f), m_f_(m_f), ylb_cnt_(ylb_cnt), yub_cnt_(yub_cnt)
 
     env_ = new IloEnv;
     m_ = IloModel(*env_);
-    vars_ = fVars(env_);
-    constrs_ = fConstrs(env_);
+    vars_ = fXVars(env_);
+    constrs_ = fXConstrs(env_);
     yVals_ = IloNumArray (*env_);
-    psiVals_ = IloNumArray (*env_);
-    psiVal_yLBs_ = IloNumArray (*env_);
-    psiVal_yUBs_ = IloNumArray (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
-
-    if (n_l_ > 0) xbar_coef_ = new double [n_l_];
 }
 
 /* copy constructor */
-Follower::Follower(const Follower & rhs) :
+FollowerX::FollowerX(const FollowerX & rhs) :
 env_(rhs.env_),
 m_(rhs.m_),
 vars_(rhs.vars_),
 constrs_(rhs.constrs_),
 yVals_(rhs.yVals_),
-psiVals_(rhs.psiVals_),
-psiVal_yLBs_(rhs.psiVal_yLBs_),
-psiVal_yUBs_(rhs.psiVal_yUBs_),
 dy_(rhs.dy_),
-dy_expr_(rhs.dy_expr_),
-xbar_coef_(rhs.xbar_coef_)
+dy_expr_(rhs.dy_expr_)
 {
     /* nothing to do */
 }
 
-Follower::~Follower()
+FollowerX::~FollowerX()
 {
     yVals_.end();
-    psiVals_.end();
-    psiVal_yLBs_.end();
-    psiVal_yUBs_.end();
     dy_.end();
     dy_expr_.end();
     
     vars_.y.end();
-    constrs_.fF.end();
+    vars_.x.end();
+    constrs_.f.end();
     constrs_.yLBs.end();
     constrs_.yUBs.end();
+    constrs_.xBds.end();
 
     cplex_.end();
     m_.end();
     env_->end();
-
-    delete[] xbar_coef_;
 }
 
-void Follower::loadProblem (Data &data) {
+void FollowerX::loadProblem (Data &data) {
 
     n_l_ = data.n_l_;
     n_f_ = data.n_f_;
     m_f_ = data.m_f_;
+
+    xlb_ = data.xlb_;
+    xub_ = data.xub_;
+    ind_col_ = data.ind_col_;
+    scale_col_ = data.scale_col_;
+    map_varind_to_lvarind_ = data.map_varind_to_lvarind_;
+
+    if (n_l_ > 0) {
+        is_integer_ = new int [n_l_];
+        is_integer_ = data.is_integer_;
+    } 
     
     ylb_cnt_ = data.ylb_cnt_;
     yub_cnt_ = data.yub_cnt_;
@@ -219,10 +215,9 @@ void Follower::loadProblem (Data &data) {
             }
         }
     }
-    if (n_l_ > 0) xbar_coef_ = new double [n_l_];
 }
 
-void Follower::createProblem () {
+void FollowerX::createProblem () {
 #ifdef DATA_DEBUG
     for (int i = 0; i < m_f_; i++) {
         for (int j = 0; j < fC_fV_cnt_[i]; j++) {
@@ -240,14 +235,20 @@ void Follower::createProblem () {
     cout << endl;
 #endif
     
+    /* add leader variable y */
+    addxVars();
+
     /* add follower variable y */
     addyVars();
     
     /* add follower constraint without x: By >= b */
-    addfFConstr();
+    addfConstr();
     
     /* add bound constraints on y */
     addyBdsConstr();
+
+    /* add bound constraints on x */
+    addxBdsConstr();
     
     /* initialize cplex */
     cplex_ = IloCplex(m_);
@@ -257,13 +258,13 @@ void Follower::createProblem () {
     for (i = 0; i < n_f_; i++)
         dy_.add(fObj_[i]);
     dy_expr_.setLinearCoefs(vars_.y, dy_);
-    m_.add(IloMinimize(*env_, dy_expr_));
+    m_.add(IloMaximize(*env_, dy_expr_));
 
     /* turn off display */
     cplex_.setOut(env_->getNullStream());
 
 //    cplex_.setParam(IloCplex::Param::TimeLimit, 10);
-    // cplex_.exportModel("follower.lp");
+    cplex_.exportModel("followerx.lp");
 
 //    // dummy r
 //    vars_.r = IloNumVar (env_->, 0, 0, ILOFLOAT, "r");
@@ -274,54 +275,22 @@ void Follower::createProblem () {
 
 }
 
-void Follower::updateProblem (double* xVals) {
-
-    double rhsChg;
-
-    int i, j;
-
-    for (i = 0; i < m_f_; i++) {
-
-        rhsChg = fC_rhs_[i];
-
-        for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            rhsChg -= fC_lV_coef_[i][j] * xVals[fC_lV_ind_[i][j]];
-        }
-
-        constrs_.fF[i].setLB(rhsChg);
-    }
-}
-
-void Follower::updateUBProblem (double* xUBs, double* xLBs) {
+void FollowerX::updateUBProblem (IloNumArray &xUBs, IloNumArray &xLBs) {
 #ifdef F_SOLVE_DEBUG
-cout << "solve follower UB: ";
+cout << "solve followerX UB: ";
 #endif 
-    double rhsChg;
-
-    int i, j;
-
-    for (i = 0; i < m_f_; i++) {
-
-        rhsChg = fC_rhs_[i];
-
-        for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            if (fC_lV_coef_[i][j] * xLBs[fC_lV_ind_[i][j]] < fC_lV_coef_[i][j] * xUBs[fC_lV_ind_[i][j]])
-                rhsChg -= fC_lV_coef_[i][j] * xLBs[fC_lV_ind_[i][j]];
-            else
-                rhsChg -= fC_lV_coef_[i][j] * xUBs[fC_lV_ind_[i][j]];
-        }
-        constrs_.fF[i].setLB(rhsChg);
-    }
+    vars_.x.setBounds(xLBs, xUBs);
+    cplex_.exportModel("followerx_updated.lp");
 }
 
-int Follower::solve () {
+int FollowerX::solve () {
 #ifdef F_SOLVE_DEBUG
     /* tic */
     auto start_t = chrono::system_clock::now();
 #endif
     /* solve */
     if (!cplex_.solve()) {
-        // env_->error() << "Failed to optimize follower problem." << endl;
+        // env_->error() << "Failed to optimize followerX problem." << endl;
         // cout << "status: " << status_ << endl;
         // return 1;
     }
@@ -331,23 +300,19 @@ int Follower::solve () {
 
 #ifdef F_SOLVE_DEBUG
     ticToc_ = (chrono::system_clock::now() - start_t);
-    cout << "Follower has optimum: " << objVal_ << ", time: " << ticToc_.count() << endl;
+    cout << "FollowerX has optimum: " << objVal_ << ", time: " << ticToc_.count() << endl;
 #endif
 
     return 0;
 }
 
-void Follower::getResults () {
+void FollowerX::getResults () {
 
     objVal_ = cplex_.getObjValue();
-
-    cplex_.getValues(yVals_, vars_.y);
-    cplex_.getDuals(psiVals_, constrs_.fF);
-    cplex_.getDuals(psiVal_yLBs_, constrs_.yLBs);
-    cplex_.getDuals(psiVal_yUBs_, constrs_.yUBs);
 }
 
-double Follower::getDy(IloNumArray &yVals) {
+
+double FollowerX::getDyVal(IloNumArray &yVals) {
     int i; 
     double Dy = 0; 
     for (i = 0; i < n_f_; i++)
@@ -356,56 +321,4 @@ double Follower::getDy(IloNumArray &yVals) {
     }
 
     return Dy;
-}
-
-void Follower::getBendersTerms(IloExpr &termsfP, IloNumVarArray &xVars, IloNumArray &barx) {
-    
-    int num;
-    int i, j; 
-    
-    double psiVals[m_f_];
-    double psiVal_yLBs [ylb_cnt_];
-    double psiVal_yUBs [yub_cnt_];
-
-    for (i = 0; i < m_f_; i++) {
-        psiVals[i] = psiVals_[i];
-    }
-    for (i = 0; i < ylb_cnt_; i++) {
-        psiVal_yLBs[i] = psiVal_yLBs_[i];
-    }
-    for (i = 0; i < yub_cnt_; i++) {
-        psiVal_yUBs[i] = psiVal_yUBs_[i];
-    }
-
-    for (i = 0; i < n_l_; i++)
-        xbar_coef_[i] = 0;
-    constant_ = 0;
-
-    for (i = 0; i < m_f_; i++) {
-
-        constant_ += fC_rhs_[i] * psiVals[i];
-
-        for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            xbar_coef_[fC_lV_ind_[i][j]] -= fC_lV_coef_[i][j] * psiVals[i];
-        }
-    }
-
-    for (i = 0; i < ylb_cnt_; i++) {
-        constant_ += ylb_coef_[i] * psiVal_yLBs[i];
-    }
-    for (i = 0; i < yub_cnt_; i++) {
-        constant_ += -yub_coef_[i] * psiVal_yUBs[i];
-    }
-
-    for (j = 0; j < n_l_; j++) {
-        termsfP += xbar_coef_[j] * xVars[j];
-    }
-    termsfP += constant_;
-
-    check_ = 0;
-    for (j = 0; j < n_l_; j++) {
-        check_ += xbar_coef_[j] * barx[j];
-    }
-    check_ += constant_;
-
 }

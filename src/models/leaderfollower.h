@@ -51,12 +51,10 @@ public:
 public:
     void loadProblem(Data &data);
     void createProblem ();
-    
     void updateProblem (double* xVals, double O);
-    
     int solve ();
 
-    void getBendersTerms (IloExpr &lFterms, IloNumVarArray &xVars, IloNumArray &barx);
+    void getBendersTerms (IloExpr &lFterms, IloNumVarArray &xVars, double * xVals);
     void getResults ();
 
     IloCplex * getCplexPtr() {return &cplex_;};

@@ -10,6 +10,12 @@
 
 #include "data.h"
 #include "callback.h"
+#include "lazyCBBenders.h"
+#include "lazyCBBendersMC.h"
+#include "heuristicCBIncumbentUpdate.h"
+#include "usercutCBfUB.h"
+#include "usercutCBfUBx.h"
+#include "usercutCBBendersMC.h"
 
 class Master {
 public:
@@ -31,7 +37,7 @@ public:
     void createProblem (); 
 
     int solve();
-    void solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower);
+    void solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower);
 
     /* get functions */
     /* get environment */
