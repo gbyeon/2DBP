@@ -8,3 +8,4 @@ build/*
 UserConfig.cmake
 .vscode/*
 .DS_Store
+extra/CoinUtils/
