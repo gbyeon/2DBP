@@ -7,6 +7,30 @@
 #include "data.h"
 #include "CoinMpsIO.hpp"
 // #define DATA_DEBUG
+
+void resize(int * &arr, int size, int newSize) {
+    int * newArr = new int [newSize];
+
+    if (size > 0){
+        memcpy(newArr, arr, size * sizeof(int));
+    }
+
+    // size = newSize;
+    freeArrayPtr(arr);
+
+    arr = newArr; 
+}
+void resize(double * &arr, int size, int newSize) {
+    double * newArr = new double [newSize];
+    
+    if (size > 0) {
+        memcpy(newArr, arr, size * sizeof(double));
+    }
+
+    // size = newSize;
+    freeArrayPtr(arr);
+    arr = newArr; 
+}
 int Data::read(string &filename) {
     
     int i, j, k;
@@ -39,7 +63,8 @@ int Data::read(string &filename) {
         if (item == "N")
         {
             auxInput >> n_f_;
-            fObj_ = new double [n_f_];
+            if (n_f_ > 0)
+                fObj_ = new double [n_f_];
         }
         else if (item == "M")
             auxInput >> m_f_;
@@ -244,9 +269,12 @@ int Data::read(string &filename) {
 
     /* get leader objective */
     /* change to minimization problem */
-    lObj_ = new double [n_];
-    llObj_ = new double [n_l_];
-    lfObj_ = new double [n_f_];
+    if (n_ > 0)
+        lObj_ = new double [n_];
+    if (n_l_ > 0)
+        llObj_ = new double [n_l_];
+    if (n_f_ > 0)
+        lfObj_ = new double [n_f_];
     lObj_constant_ = 0;
     for (i = 0; i < ind_col.size(); i++) {
         for (k = 0; k < ind_col[i].size(); k++) {
@@ -273,7 +301,8 @@ int Data::read(string &filename) {
 #endif
 
     /* get integer var indicator of leader */
-    is_integer_ = new int [n_l_];
+    if (n_l_ > 0)
+        is_integer_ = new int [n_l_];
     int pos = 0;
     for (i = 0; i < ind_col.size(); i++) {
         if (!is_follower_var[i]) {
@@ -288,26 +317,27 @@ int Data::read(string &filename) {
         cout << "is_integer? " << i << " th lvar: " << is_integer_[i] << endl;
     }
 #endif
-
     /* follower constraint data */
-    fC_rhs_ = new double [m_f_];
-    fC_fV_cnt_ = new int [m_f_];
-    fC_fV_coef_ = new double * [m_f_];
-    fC_fV_ind_ = new int * [m_f_];
-    fC_lV_cnt_ = new int [m_f_];
-    fC_lV_coef_ = new double * [m_f_];
-    fC_lV_ind_ = new int * [m_f_];
-
+    if (m_f_ > 0) {
+        fC_rhs_ = new double [m_f_];
+        fC_fV_cnt_ = new int [m_f_];
+        fC_fV_coef_ = new double * [m_f_];
+        fC_fV_ind_ = new int * [m_f_];
+        fC_lV_cnt_ = new int [m_f_];
+        fC_lV_coef_ = new double * [m_f_];
+        fC_lV_ind_ = new int * [m_f_];
+    }
     /* leader constraint data */
-    lC_rhs_ = new double [m_l_];
-    lC_fV_cnt_ = new int [m_l_];
-    lC_fV_coef_ = new double * [m_l_];
-    lC_fV_ind_ = new int * [m_l_];
-    lC_lV_cnt_ = new int [m_l_];
-    lC_lV_coef_ = new double * [m_l_];
-    lC_lV_ind_ = new int * [m_l_];
-
-
+    if (m_l_ > 0) {
+        lC_rhs_ = new double [m_l_];
+        lC_fV_cnt_ = new int [m_l_];
+        lC_fV_coef_ = new double * [m_l_];
+        lC_fV_ind_ = new int * [m_l_];
+        lC_lV_cnt_ = new int [m_l_];
+        lC_lV_coef_ = new double * [m_l_];
+        lC_lV_ind_ = new int * [m_l_];
+    }
+    
     /* get default rhs */
     for (j = 0; j < ind_row.size(); j++) {
         
@@ -366,15 +396,16 @@ int Data::read(string &filename) {
                             // cout << "lv cnt: " << lC_lV_cnt[row_index] << endl;
                         }
                     }
+                }  
+                if (lC_fV_cnt_[row_index] > 0) {
+                    lC_fV_ind_[row_index] = new int [lC_fV_cnt_[row_index]];
+                    lC_fV_coef_[row_index] = new double [lC_fV_cnt_[row_index]]; 
                 }
                 
-
-                lC_fV_ind_[row_index] = new int [lC_fV_cnt_[row_index]];
-                lC_fV_coef_[row_index] = new double [lC_fV_cnt_[row_index]];
-
-                lC_lV_ind_[row_index] = new int [lC_lV_cnt_[row_index]];
-                lC_lV_coef_[row_index] = new double [lC_lV_cnt_[row_index]];
-
+                if (lC_lV_cnt_[row_index] > 0) {
+                    lC_lV_ind_[row_index] = new int [lC_lV_cnt_[row_index]];
+                    lC_lV_coef_[row_index] = new double [lC_lV_cnt_[row_index]];
+                }
                 fpos = 0;
                 lpos = 0;
                 for (i = 0; i < row.getNumElements(); i++) {
@@ -430,13 +461,17 @@ int Data::read(string &filename) {
                         }
                     }
                 }
-
-                fC_fV_ind_[row_index] = new int [fC_fV_cnt_[row_index]];
-                fC_fV_coef_[row_index] = new double [fC_fV_cnt_[row_index]];
-
-                fC_lV_ind_[row_index] = new int [fC_lV_cnt_[row_index]];
-                fC_lV_coef_[row_index] = new double [fC_lV_cnt_[row_index]];
-
+                if (fC_fV_cnt_[row_index] > 0)
+                {
+                    fC_fV_ind_[row_index] = new int [fC_fV_cnt_[row_index]];
+                    fC_fV_coef_[row_index] = new double [fC_fV_cnt_[row_index]];
+                }
+                
+                if (fC_lV_cnt_[row_index] > 0)
+                {
+                    fC_lV_ind_[row_index] = new int [fC_lV_cnt_[row_index]];
+                    fC_lV_coef_[row_index] = new double [fC_lV_cnt_[row_index]];
+                }  
                 fpos = 0;
                 lpos = 0;
                 for (i = 0; i < row.getNumElements(); i++) {
@@ -486,10 +521,14 @@ int Data::read(string &filename) {
     }
     
     // cout << "ylb_cnt: " << ylb_cnt << ", yub_cnt: " << yub_cnt << endl;
-    ylb_coef_ = new double [ylb_cnt_];
-    ylb_ind_ = new int [ylb_cnt_];
-    yub_coef_ = new double [yub_cnt_];
-    yub_ind_ = new int [yub_cnt_];
+    if (ylb_cnt_ > 0) {
+        ylb_coef_ = new double [ylb_cnt_];
+        ylb_ind_ = new int [ylb_cnt_];
+    }
+    if (yub_cnt_ > 0) {
+        yub_coef_ = new double [yub_cnt_];
+        yub_ind_ = new int [yub_cnt_];
+    }
     int lbpos = 0;
     int ubpos = 0;
     for (i = 0; i < n_; i++) {
@@ -571,8 +610,10 @@ int Data::read(string &filename) {
                         }
                     }
                     if (!found_index){
-                        ylb_ind_ = (int *) realloc(ylb_ind_, sizeof(int) * (ylb_cnt_+1));
-                        ylb_coef_ = (double *) realloc(ylb_coef_, sizeof(double) * (ylb_cnt_+1));
+                        resize(ylb_ind_, ylb_cnt_, ylb_cnt_+1);
+                        resize(ylb_coef_, ylb_cnt_, ylb_cnt_+1);
+                        // ylb_ind_ = (int *) realloc(ylb_ind_, sizeof(int) * (ylb_cnt_+1));
+                        // ylb_coef_ = (double *) realloc(ylb_coef_, sizeof(double) * (ylb_cnt_+1));
                         
                        ylb_ind_[ylb_cnt_] = f_ind;
                        ylb_coef_[ylb_cnt_] = mps.getColUpper()[i];
@@ -605,9 +646,11 @@ int Data::read(string &filename) {
                         }
                     }
                     if (!found_index){
+                        resize(yub_ind_, yub_cnt_, yub_cnt_+1);
+                        resize(yub_coef_, yub_cnt_, yub_cnt_+1);
 
-                        yub_ind_ = (int *) realloc(yub_ind_, sizeof(int) * (yub_cnt_+1));
-                        yub_coef_ = (double *) realloc(yub_coef_, sizeof(double) * (yub_cnt_+1));
+                        // yub_ind_ = (int *) realloc(yub_ind_, sizeof(int) * (yub_cnt_+1));
+                        // yub_coef_ = (double *) realloc(yub_coef_, sizeof(double) * (yub_cnt_+1));
 
                        yub_ind_[yub_cnt_] = f_ind;
                        yub_coef_[yub_cnt_] = mps.getColLower()[i];

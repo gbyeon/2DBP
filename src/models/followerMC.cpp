@@ -22,6 +22,8 @@ FollowerMC::FollowerMC()
         nuVals_[i] = IloNumArray (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
+
+    xbar_coef_ = NULL;
 }
 
 FollowerMC::FollowerMC(int n_l,
@@ -43,63 +45,24 @@ FollowerMC::FollowerMC(int n_l,
                 int ** fC_lV_ind) : 
 n_l_(n_l), n_f_(n_f), m_f_(m_f), ylb_cnt_(ylb_cnt), yub_cnt_(yub_cnt)
 {
-    if (ylb_cnt_ > 0) {
-        ylb_ind_ = new int [ylb_cnt];
-        ylb_coef_ = new double [ylb_cnt];
+    ylb_ind_ = ylb_ind;
+    ylb_coef_ = ylb_coef;
+    
+    yub_ind_ = yub_ind;
+    yub_coef_ = yub_coef;
+    
+    fObj_ = fObj;
+    
+    fC_rhs_ = fC_rhs;
 
-        ylb_ind_ = ylb_ind;
-        ylb_coef_ = ylb_coef;
-    }
+    fC_fV_cnt_ = fC_fV_cnt;
+    fC_lV_cnt_ = fC_lV_cnt;
 
-    if (yub_cnt_ > 0) {
-        yub_ind_ = new int [yub_cnt];
-        yub_coef_ = new double [yub_cnt];
+    fC_fV_coef_ = fC_fV_coef;
+    fC_fV_ind_ = fC_fV_ind;
+    fC_lV_coef_ = fC_lV_coef;
+    fC_lV_ind_ = fC_lV_ind;
 
-        yub_ind_ = yub_ind;
-        yub_coef_ = yub_coef;
-    }
-
-    if (n_f_ > 0) {
-        fObj_ = new double [n_f];
-        fObj_ = fObj;
-    }
-
-    if (m_f > 0) {
-        
-        fC_rhs_ = new double [m_f];
-        fC_rhs_ = fC_rhs;
-
-        fC_fV_cnt_ = new int [m_f];
-        fC_lV_cnt_ = new int [m_f];
-
-        fC_fV_cnt_ = fC_fV_cnt;
-        fC_lV_cnt_ = fC_lV_cnt;
-
-        fC_fV_coef_ = new double * [m_f];
-        fC_fV_ind_ = new int * [m_f];
-        
-        fC_lV_coef_ = new double * [m_f];
-        fC_lV_ind_ = new int * [m_f];
-
-        for (int i = 0; i < m_f; i++)
-        {
-            if (fC_fV_cnt[i] > 0) {
-                fC_fV_coef_[i] = new double [fC_fV_cnt[i]];
-                fC_fV_ind_[i] = new int [fC_fV_cnt[i]];
-
-                fC_fV_coef_[i] = fC_fV_coef[i];
-                fC_fV_ind_[i] = fC_fV_ind[i];
-            }
-
-            if (fC_lV_cnt[i] > 0) {
-                fC_lV_coef_[i] = new double [fC_lV_cnt[i]];
-                fC_lV_ind_[i] = new int [fC_lV_cnt[i]];
-
-                fC_lV_coef_[i] = fC_lV_coef[i];
-                fC_lV_ind_[i] = fC_lV_ind[i];
-            }
-        }
-    }
 
     env_ = new IloEnv;
     m_ = IloModel(*env_);
@@ -113,12 +76,14 @@ n_l_(n_l), n_f_(n_f), m_f_(m_f), ylb_cnt_(ylb_cnt), yub_cnt_(yub_cnt)
     dy_expr_ = IloExpr (*env_);
 
     if (n_l_ > 0) xbar_coef_ = new double [n_l_];
+    else xbar_coef_ = NULL;
 }
 
 /* copy constructor */
 FollowerMC::FollowerMC(const FollowerMC & rhs) :
 env_(rhs.env_),
 m_(rhs.m_),
+cplex_(rhs.cplex_),
 vars_(rhs.vars_),
 constrs_(rhs.constrs_),
 yVals_(rhs.yVals_),
@@ -146,8 +111,9 @@ FollowerMC::~FollowerMC()
     cplex_.end();
     m_.end();
     env_->end();
+    delete env_;
 
-    delete[] xbar_coef_;
+    freeArrayPtr(xbar_coef_);
 }
 
 void FollowerMC::loadProblem (Data &data) {
@@ -158,65 +124,27 @@ void FollowerMC::loadProblem (Data &data) {
     
     ylb_cnt_ = data.ylb_cnt_;
     yub_cnt_ = data.yub_cnt_;
+    ylb_ind_ = data.ylb_ind_;
+    ylb_coef_ = data.ylb_coef_;
+
+    yub_ind_ = data.yub_ind_;
+    yub_coef_ = data.yub_coef_;
     
-    if (ylb_cnt_ > 0) {
-        ylb_ind_ = new int [ylb_cnt_];
-        ylb_coef_ = new double [ylb_cnt_];
+    fObj_ = data.fObj_;
+    
+    fC_rhs_ = data.fC_rhs_;
 
-        ylb_ind_ = data.ylb_ind_;
-        ylb_coef_ = data.ylb_coef_;
-    }
+    fC_fV_cnt_ = data.fC_fV_cnt_;
+    fC_lV_cnt_ = data.fC_lV_cnt_;
 
-    if (yub_cnt_ > 0) {
-        yub_ind_ = new int [yub_cnt_];
-        yub_coef_ = new double [yub_cnt_];
+    fC_fV_coef_ = data.fC_fV_coef_;
+    fC_fV_ind_ = data.fC_fV_ind_;
+    fC_lV_coef_ = data.fC_lV_coef_;
+    fC_lV_ind_ = data.fC_lV_ind_;
 
-        yub_ind_ = data.yub_ind_;
-        yub_coef_ = data.yub_coef_;
-    }
 
-    if (n_f_ > 0) {
-        fObj_ = new double [n_f_];
-        fObj_ = data.fObj_;
-    }
-
-    if (m_f_ > 0) {
-        
-        fC_rhs_ = new double [m_f_];
-        fC_rhs_ = data.fC_rhs_;
-
-        fC_fV_cnt_ = new int [m_f_];
-        fC_lV_cnt_ = new int [m_f_];
-
-        fC_fV_cnt_ = data.fC_fV_cnt_;
-        fC_lV_cnt_ = data.fC_lV_cnt_;
-
-        fC_fV_coef_ = new double * [m_f_];
-        fC_fV_ind_ = new int * [m_f_];
-        
-        fC_lV_coef_ = new double * [m_f_];
-        fC_lV_ind_ = new int * [m_f_];
-
-        for (int i = 0; i < m_f_; i++)
-        {
-            if (fC_fV_cnt_[i] > 0) {
-                fC_fV_coef_[i] = new double [fC_fV_cnt_[i]];
-                fC_fV_ind_[i] = new int [fC_fV_cnt_[i]];
-
-                fC_fV_coef_[i] = data.fC_fV_coef_[i];
-                fC_fV_ind_[i] = data.fC_fV_ind_[i];
-            }
-
-            if (fC_lV_cnt_[i] > 0) {
-                fC_lV_coef_[i] = new double [fC_lV_cnt_[i]];
-                fC_lV_ind_[i] = new int [fC_lV_cnt_[i]];
-
-                fC_lV_coef_[i] = data.fC_lV_coef_[i];
-                fC_lV_ind_[i] = data.fC_lV_ind_[i];
-            }
-        }
-    }
     if (n_l_ > 0) xbar_coef_ = new double [n_l_];
+    else xbar_coef_ = NULL;
 }
 
 void FollowerMC::createProblem () {

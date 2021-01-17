@@ -226,4 +226,20 @@
     }   \
     (this)->m_.add((this)->constrs_.nu); \
 }
+
+#define freeArrayPtr(ptr)  \
+	if (ptr) {              \
+		delete [] ptr;      \
+		ptr = NULL;         \
+    }
+
+#define free2DArrayPtr(n, ptr)         \
+	if (ptr) {                             \
+		for (int _i = 0; _i < n; ++_i) { \
+			freeArrayPtr(ptr[_i])        \
+		}                                  \
+		delete [] ptr;                     \
+		ptr = NULL;                        \
+	}
+
 #endif //BILEVEL_MACRO_H_

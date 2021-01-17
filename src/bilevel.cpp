@@ -124,8 +124,8 @@ int main (int argc, char *argv[]) {
      *          x, y bounds       (yLbs, yUbs)
      */
     FollowerX followerx;
-    followerx.loadProblem(data);
-    followerx.createProblem();
+    // followerx.loadProblem(data);
+    // followerx.createProblem();
     
     /* create leaderFollower problem:
      * min c_y y : G_y y >= h (-G_x x)  (lF)

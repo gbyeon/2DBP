@@ -63,6 +63,8 @@ Master::~Master()
     cplex_.end();
     m_.end();
     env_->end();
+
+    delete env_;
 }
 
 void Master::loadProblem (Data &data) {
@@ -79,115 +81,38 @@ void Master::loadProblem (Data &data) {
     map_varind_to_lvarind_ = data.map_varind_to_lvarind_;
     lObj_constant_ = data.lObj_constant_;
 
-    if (n_l_ > 0) {
-
-        is_integer_ = new int [n_l_];
-        llObj_ = new double [n_l_];
-
-        is_integer_ = data.is_integer_;
-        llObj_ = data.llObj_;
-    }   
+    is_integer_ = data.is_integer_;
+    llObj_ = data.llObj_;
     
     ylb_cnt_ = data.ylb_cnt_;
     yub_cnt_ = data.yub_cnt_;
 
-    if (ylb_cnt_ > 0) {
-        ylb_ind_ = new int [ylb_cnt_];
-        ylb_coef_ = new double [ylb_cnt_];
+    ylb_ind_ = data.ylb_ind_;
+    ylb_coef_ = data.ylb_coef_;
+    yub_ind_ = data.yub_ind_;
+    yub_coef_ = data.yub_coef_;
+    
+    fObj_ = data.fObj_;
+    lfObj_ = data.lfObj_;
+    
+    fC_rhs_ = data.fC_rhs_;
+    fC_fV_cnt_ = data.fC_fV_cnt_;
+    fC_lV_cnt_ = data.fC_lV_cnt_;
 
-        ylb_ind_ = data.ylb_ind_;
-        ylb_coef_ = data.ylb_coef_;
-    }
+    fC_fV_coef_= data.fC_fV_coef_;
+    fC_fV_ind_ = data.fC_fV_ind_;
+    fC_lV_coef_ = data.fC_lV_coef_;
+    fC_lV_ind_ = data.fC_lV_ind_;
 
-    if (yub_cnt_ > 0) {
-        yub_ind_ = new int [yub_cnt_];
-        yub_coef_ = new double [yub_cnt_];
+    lC_rhs_ = data.lC_rhs_;
 
-        yub_ind_ = data.yub_ind_;
-        yub_coef_ = data.yub_coef_;
-    }
+    lC_fV_cnt_ = data.lC_fV_cnt_;
+    lC_lV_cnt_ = data.lC_lV_cnt_;
 
-    if (n_f_ > 0) {
-        fObj_ = new double [n_f_];
-        fObj_ = data.fObj_;
-
-        lfObj_ = new double [n_f_];
-        lfObj_ = data.lfObj_;
-    }
-
-     if (m_f_ > 0) {
-        
-        fC_rhs_ = new double [m_f_];
-        fC_rhs_ = data.fC_rhs_;
-
-        fC_fV_cnt_ = new int [m_f_];
-        fC_lV_cnt_ = new int [m_f_];
-
-        fC_fV_cnt_ = data.fC_fV_cnt_;
-        fC_lV_cnt_ = data.fC_lV_cnt_;
-
-        fC_fV_coef_ = new double * [m_f_];
-        fC_fV_ind_ = new int * [m_f_];
-        
-        fC_lV_coef_ = new double * [m_f_];
-        fC_lV_ind_ = new int * [m_f_];
-
-        for (int i = 0; i < m_f_; i++)
-        {
-            if (fC_fV_cnt_[i] > 0) {
-                fC_fV_coef_[i] = new double [fC_fV_cnt_[i]];
-                fC_fV_ind_[i] = new int [fC_fV_cnt_[i]];
-
-                fC_fV_coef_[i] = data.fC_fV_coef_[i];
-                fC_fV_ind_[i] = data.fC_fV_ind_[i];
-            }
-
-            if (fC_lV_cnt_[i] > 0) {
-                fC_lV_coef_[i] = new double [fC_lV_cnt_[i]];
-                fC_lV_ind_[i] = new int [fC_lV_cnt_[i]];
-
-                fC_lV_coef_[i] = data.fC_lV_coef_[i];
-                fC_lV_ind_[i] = data.fC_lV_ind_[i];
-            }
-        }
-    }
-
-    if (m_l_ > 0) {
-        
-        lC_rhs_ = new double [m_l_];
-        lC_rhs_ = data.lC_rhs_;
-
-        lC_fV_cnt_ = new int [m_l_];
-        lC_lV_cnt_ = new int [m_l_];
-
-        lC_fV_cnt_ = data.lC_fV_cnt_;
-        lC_lV_cnt_ = data.lC_lV_cnt_;
-
-        lC_fV_coef_ = new double * [m_l_];
-        lC_fV_ind_ = new int * [m_l_];
-        
-        lC_lV_coef_ = new double * [m_l_];
-        lC_lV_ind_ = new int * [m_l_];
-
-        for (int i = 0; i < m_l_; i++)
-        {
-            if (lC_fV_cnt_[i] > 0) {
-                lC_fV_coef_[i] = new double [lC_fV_cnt_[i]];
-                lC_fV_ind_[i] = new int [lC_fV_cnt_[i]];
-
-                lC_fV_coef_[i] = data.lC_fV_coef_[i];
-                lC_fV_ind_[i] = data.lC_fV_ind_[i];
-            }
-
-            if (lC_lV_cnt_[i] > 0) {
-                lC_lV_coef_[i] = new double [lC_lV_cnt_[i]];
-                lC_lV_ind_[i] = new int [lC_lV_cnt_[i]];
-
-                lC_lV_coef_[i] = data.lC_lV_coef_[i];
-                lC_lV_ind_[i] = data.lC_lV_ind_[i];
-            }
-        }
-    }
+    lC_fV_coef_ = data.lC_fV_coef_;
+    lC_fV_ind_ = data.lC_fV_ind_;
+    lC_lV_coef_ = data.lC_lV_coef_;
+    lC_lV_ind_ = data.lC_lV_ind_;
 }
 
 /* master problem do not need to have y variables, leader and follower constraints, and t >= cy 
@@ -390,7 +315,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
     /* usercutCBBendersMC.h */
     // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
     /* usercutCBfUB.h */
-    cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
+    // cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
     /* usercutCBfUBx.h */
     // cplex_.use(BendersUserCallbackX(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, followerx));
     

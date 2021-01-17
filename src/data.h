@@ -19,6 +19,8 @@
 #include <chrono>
 #include <algorithm> // std::find
 
+#include <macro.h>
+
 class Data {
 public:
     int read(string &filename);
@@ -78,78 +80,35 @@ public:
     vector<double> xub_;
     map<int,int> map_varind_to_lvarind_;
 
-    Data(){
-        ylb_cnt_ = 0;
-        yub_cnt_ = 0;
-    };
+    Data() : n_(0), n_l_(0), n_f_(0), m_(0), m_l_(0), m_f_(0), ylb_cnt_(0), yub_cnt_(0), ylb_ind_(NULL), ylb_coef_(NULL), yub_ind_(NULL), yub_coef_(NULL), fObj_(NULL), lObj_(NULL), llObj_(NULL), lfObj_(NULL), is_integer_(NULL), fC_rhs_(NULL), fC_fV_cnt_(NULL), fC_fV_coef_(NULL), fC_fV_ind_(NULL), fC_lV_cnt_(NULL), fC_lV_coef_(NULL), fC_lV_ind_(NULL), lC_rhs_(NULL), lC_fV_cnt_(NULL), lC_fV_coef_(NULL), lC_fV_ind_(NULL), lC_lV_cnt_(NULL), lC_lV_coef_(NULL), lC_lV_ind_(NULL) {};
 
     ~Data(){     
-        if (m_f_ > 0) 
-        {
-            delete[] fC_rhs_;
+        freeArrayPtr(fC_rhs_);
+        free2DArrayPtr(m_f_, fC_fV_coef_);
+        free2DArrayPtr(m_f_, fC_fV_ind_);
+        free2DArrayPtr(m_f_, fC_lV_coef_);
+        free2DArrayPtr(m_f_, fC_lV_ind_);
+        freeArrayPtr(fC_fV_cnt_);
+        freeArrayPtr(fC_lV_cnt_);
+           
+        freeArrayPtr(lC_rhs_);
+        free2DArrayPtr(m_l_, lC_fV_coef_);
+        free2DArrayPtr(m_l_, lC_fV_ind_);
+        free2DArrayPtr(m_l_, lC_lV_coef_);
+        free2DArrayPtr(m_l_, lC_lV_ind_);
+        freeArrayPtr(lC_fV_cnt_);
+        freeArrayPtr(lC_lV_cnt_);
 
-            for (int i = 0; i < m_f_; i++) 
-            {    
-                if (fC_fV_cnt_[i] > 0) {
-                    delete[] fC_fV_coef_[i];
-                    delete[] fC_fV_ind_[i];
-                }
-                if (fC_lV_cnt_[i] > 0) {
-                    delete[] fC_lV_coef_[i];
-                    delete[] fC_lV_ind_[i];
-                }
-            }
+        freeArrayPtr(ylb_coef_);
+        freeArrayPtr(yub_coef_);
+        freeArrayPtr(ylb_ind_);
+        freeArrayPtr(yub_ind_);
+        freeArrayPtr(fObj_);
+        freeArrayPtr(lObj_);
+        freeArrayPtr(lfObj_);
+        freeArrayPtr(llObj_);
+        freeArrayPtr(is_integer_);
 
-            delete[] fC_fV_coef_;
-            delete[] fC_fV_ind_;
-            delete[] fC_lV_coef_;
-            delete[] fC_lV_ind_;
-
-            delete[] fC_fV_cnt_;
-            delete[] fC_lV_cnt_;
-        }
-
-        if (m_l_ > 0) {
-            delete[] lC_rhs_;
-
-            for (int i = 0; i < m_l_; i++) 
-            {    
-                if (lC_fV_cnt_[i] > 0) {
-                    delete[] lC_fV_coef_[i];
-                    delete[] lC_fV_ind_[i];
-                }
-                if (lC_lV_cnt_[i] > 0) {
-                    delete[] lC_lV_coef_[i];
-                    delete[] lC_lV_ind_[i];
-                }
-            }
-            delete[] lC_fV_coef_;
-            delete[] lC_fV_ind_;
-            delete[] lC_lV_coef_;
-            delete[] lC_lV_ind_;
-
-            delete[] lC_fV_cnt_;
-            delete[] lC_lV_cnt_;
-        }
-    
-        if (ylb_cnt_ > 0) {
-            delete[] ylb_coef_;
-            delete[] yub_coef_;
-        }
-        if (yub_cnt_ > 0) {
-            delete[] ylb_ind_;
-            delete[] yub_ind_;
-        }
-        if (n_f_ > 0) {
-            delete[] fObj_;
-            delete[] lfObj_;
-        }
-        if (n_ > 0)
-            delete[] lObj_;
-        if (n_l_ > 0) {
-            delete[] is_integer_;
-            delete[] llObj_;
-        }
     };
 };
 
