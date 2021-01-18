@@ -54,7 +54,6 @@ Hpp::~Hpp()
     constrs_.f.end();
     constrs_.yLBs.end();
     constrs_.yUBs.end();
-
     constrs_.xBds.end();
 
     cplex_.end();
@@ -78,41 +77,33 @@ void Hpp::loadProblem (Data &data) {
     lObj_constant_ = data.lObj_constant_;
 
     is_integer_ = data.is_integer_;
-    llObj_ = data.llObj_;
-
     
+    llObj_ = data.llObj_;
+    fObj_ = data.fObj_;
+    lfObj_ = data.lfObj_;
+
     ylb_cnt_ = data.ylb_cnt_;
+    ylb_ind_ = data.ylb_ind_;
+    ylb_coef_ = data.ylb_coef_;
     yub_cnt_ = data.yub_cnt_;
+    yub_ind_ = data.yub_ind_;
+    yub_coef_ = data.yub_coef_;
+    
+    fC_rhs_ = data.fC_rhs_;
+    fC_fV_cnt_ = data.fC_fV_cnt_;
+    fC_lV_cnt_ = data.fC_lV_cnt_;
+    fC_fV_coef_ = data.fC_fV_coef_;
+    fC_fV_ind_ = data.fC_fV_ind_;
+    fC_lV_coef_ = data.fC_lV_coef_;
+    fC_lV_ind_ = data.fC_lV_ind_;
 
-        ylb_ind_ = data.ylb_ind_;
-        ylb_coef_ = data.ylb_coef_;
-
-        yub_ind_ = data.yub_ind_;
-        yub_coef_ = data.yub_coef_;
-        fObj_ = data.fObj_;
-
-        lfObj_ = data.lfObj_;
-        fC_rhs_ = data.fC_rhs_;
-
-
-        fC_fV_cnt_ = data.fC_fV_cnt_;
-        fC_lV_cnt_ = data.fC_lV_cnt_;
-
-        fC_fV_coef_ = data.fC_fV_coef_;
-        fC_fV_ind_ = data.fC_fV_ind_;
-        fC_lV_coef_ = data.fC_lV_coef_;
-        fC_lV_ind_ = data.fC_lV_ind_;
-        lC_rhs_ = data.lC_rhs_;
-
-
-        lC_fV_cnt_ = data.lC_fV_cnt_;
-        lC_lV_cnt_ = data.lC_lV_cnt_;
-
-        lC_fV_coef_ = data.lC_fV_coef_;
-        lC_fV_ind_ = data.lC_fV_ind_;
-        lC_lV_coef_ = data.lC_lV_coef_;
-        lC_lV_ind_ = data.lC_lV_ind_;
-
+    lC_rhs_ = data.lC_rhs_;
+    lC_fV_cnt_ = data.lC_fV_cnt_;
+    lC_lV_cnt_ = data.lC_lV_cnt_;
+    lC_fV_coef_ = data.lC_fV_coef_;
+    lC_fV_ind_ = data.lC_fV_ind_;
+    lC_lV_coef_ = data.lC_lV_coef_;
+    lC_lV_ind_ = data.lC_lV_ind_;
 }
 
 void Hpp::createProblem () {
@@ -124,8 +115,8 @@ void Hpp::createProblem () {
     auto start_t = chrono::system_clock::now();
 #endif
 
-    addxVars ();
-    addyVars ();
+    addxVars();
+    addyVars();
 
 #ifdef HPP_BUILD_DEBUG
     /* toc */
@@ -218,16 +209,16 @@ void Hpp::createProblem () {
     cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
     cplex_.setParam(IloCplex::Param::MIP::Strategy::VariableSelect, CPX_VARSEL_STRONG);
 
-    /* set branching priority */
-    /* if x appears in follower problem, increase priority */
-    vector<int> priority(n_l_, 0);
+    // /* set branching priority */
+    // /* if x appears in follower problem, increase priority */
+    // vector<int> priority(n_l_, 0);
     
-    for (i = 0; i < m_f_; i++) {
-        for (j = 0; j < fC_lV_cnt_[i]; j++) {
-            priority[fC_lV_ind_[i][j]] += 1;
-            cplex_.setPriority(vars_.x[fC_lV_ind_[i][j]], priority[fC_lV_ind_[i][j]]);
-        }
-    }
+    // for (i = 0; i < m_f_; i++) {
+    //     for (j = 0; j < fC_lV_cnt_[i]; j++) {
+    //         priority[fC_lV_ind_[i][j]] += 1;
+    //         cplex_.setPriority(vars_.x[fC_lV_ind_[i][j]], priority[fC_lV_ind_[i][j]]);
+    //     }
+    // }
 
 #ifdef HPP_BUILD_DEBUG
     /* toc */
@@ -279,7 +270,10 @@ bool Hpp::solvefUb () {
 
     cplex_.getObjective().setSense(IloObjective::Sense::Maximize);
     cplex_.getObjective().setExpr(dy_expr_);
-
+    
+    double original_time_limit = timelimit_;
+    setTimeLimit(100);
+    
 //    cplex_.exportModel("fub.lp");
 
     if (!cplex_.solve()) {
@@ -287,9 +281,9 @@ bool Hpp::solvefUb () {
         return false;
     }
 
-    if (cplex_.getStatus() == IloAlgorithm::Status::Optimal) {
+    if (cplex_.getStatus() == IloAlgorithm::Status::Optimal || cplex_.getStatus() == IloAlgorithm::Status::Feasible) {
 
-        fUB_ = cplex_.getObjValue();
+        fUB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
         cout << "f.M: " << fUB_ << endl;
 
     } else {
@@ -298,5 +292,6 @@ bool Hpp::solvefUb () {
         return false;
     }
 
+    setTimeLimit(original_time_limit);
     return true;
 }

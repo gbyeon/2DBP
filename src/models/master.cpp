@@ -54,9 +54,7 @@ Master::~Master()
     constrs_.f.end();
     constrs_.yLBs.end();
     constrs_.yUBs.end();
-
     constrs_.xBds.end();
-
     constrs_.optCuts.end();
     constrs_.feasCuts.end();
 
@@ -85,10 +83,9 @@ void Master::loadProblem (Data &data) {
     llObj_ = data.llObj_;
     
     ylb_cnt_ = data.ylb_cnt_;
-    yub_cnt_ = data.yub_cnt_;
-
     ylb_ind_ = data.ylb_ind_;
     ylb_coef_ = data.ylb_coef_;
+    yub_cnt_ = data.yub_cnt_;
     yub_ind_ = data.yub_ind_;
     yub_coef_ = data.yub_coef_;
     
@@ -98,17 +95,14 @@ void Master::loadProblem (Data &data) {
     fC_rhs_ = data.fC_rhs_;
     fC_fV_cnt_ = data.fC_fV_cnt_;
     fC_lV_cnt_ = data.fC_lV_cnt_;
-
     fC_fV_coef_= data.fC_fV_coef_;
     fC_fV_ind_ = data.fC_fV_ind_;
     fC_lV_coef_ = data.fC_lV_coef_;
     fC_lV_ind_ = data.fC_lV_ind_;
 
     lC_rhs_ = data.lC_rhs_;
-
     lC_fV_cnt_ = data.lC_fV_cnt_;
     lC_lV_cnt_ = data.lC_lV_cnt_;
-
     lC_fV_coef_ = data.lC_fV_coef_;
     lC_fV_ind_ = data.lC_fV_ind_;
     lC_lV_coef_ = data.lC_lV_coef_;
@@ -128,9 +122,9 @@ void Master::createProblem () {
     auto start_t = chrono::system_clock::now();
 #endif
 
-    addxVars ();
-    addyVars ();
-    addtVar ();
+    addxVars();
+    addyVars();
+    addtVar();
 
 #ifdef M_BUILD_DEBUG
     /* toc */
