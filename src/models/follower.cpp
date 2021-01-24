@@ -181,6 +181,7 @@ void Follower::createProblem () {
 
     /* turn off display */
     cplex_.setOut(env_->getNullStream());
+    // cplex_.setParam(IloCplex::Param::Sifting::Display,2);
 
 //    cplex_.setParam(IloCplex::Param::TimeLimit, 10);
     // cplex_.exportModel("follower.lp");
@@ -194,7 +195,7 @@ void Follower::createProblem () {
 
 }
 
-void Follower::updateProblem (double* xVals) {
+void Follower::updateProblem (double* &xVals) {
 
     double rhsChg;
 
@@ -212,13 +213,20 @@ void Follower::updateProblem (double* xVals) {
     }
 }
 
-void Follower::updateUBProblem (double* xUBs, double* xLBs) {
+void Follower::updateUBProblem (double* &xUBs, double* &xLBs) {
 #ifdef F_SOLVE_DEBUG
 cout << "solve follower UB: ";
 #endif 
     double rhsChg;
 
     int i, j;
+
+    for (i=0; i < n_l_; i++) {
+        if (xUBs[i] > 1)
+            xUBs[i] = 1;
+        if (xLBs[i] < 0)
+            xLBs[i] = 0;
+    }
 
     for (i = 0; i < m_f_; i++) {
 
@@ -232,6 +240,7 @@ cout << "solve follower UB: ";
         }
         constrs_.fF[i].setLB(rhsChg);
     }
+//    cplex_.exportModel("follower_fUB.lp");
 }
 
 int Follower::solve () {

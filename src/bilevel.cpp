@@ -8,7 +8,6 @@
 #include <assert.h>
 
 #include "master.h"
-#include "hpp.h"
 
 int getArgValues (int argc, char *argv[], string &filename, double * &testValue){
 
@@ -102,15 +101,6 @@ int main (int argc, char *argv[]) {
         return 1;
     }
 
-    /* create hpp problem:
-     * min c_x x + c_y y : G_x x + G_y y >= h   (l)
-     *                     Ax + By >= b         (f)
-     *                     x bounds, y bounds   (xBds, yLbs, yUbs)
-     */
-    Hpp hpp;
-    hpp.loadProblem(data);
-    hpp.createProblem();
-
     /* create follower problem:
      * min dy : By >= b (-Ax)   (fF)
      *          y bounds        (yLbs, yUbs)
@@ -146,18 +136,13 @@ int main (int argc, char *argv[]) {
     // followerMC.createProblem();
     // followerMC.setpsiUB(5000);
 
-    /* calculate upper bound of follower obj val */
-    if (hpp.solvefUb())
-        follower.setfUb(hpp.getfUb());
-    // follower.setfUb(100000);
-
     Master master;
     master.loadProblem(data);
     master.createProblem();
     master.setTimeLimit(3600);
 
     /* solve using Benders implemented with callback */
-    master.solveCallback(follower, followerMC, followerx, leaderFollower);
+    master.solveCallback(follower, followerMC, followerx, leaderFollower, data);
     
     /* get results */
     cout << "objVal: " << master.getObjVal() << endl;

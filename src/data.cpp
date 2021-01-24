@@ -49,6 +49,7 @@ int Data::read(string &filename) {
     
     int obj_cnt = 0;
     int fObjSense;
+    int objSense = -1;
     
     /* leader obj sense is assumed to be the same as the fObjSense */
     int scale_lobj;
@@ -115,6 +116,7 @@ int Data::read(string &filename) {
 
         xlb_[j] = mps.getColLower()[j];
         xub_[j] = mps.getColUpper()[j];
+        // cout << "xlb_:" << xlb_[j] << ", xub_:" << xub_[j] << endl;
 
         if (!is_follower_var[j] && mps.isInteger(j)) {
             if (mps.getColLower()[j] != 0 || mps.getColUpper()[j] != 1) 
@@ -256,7 +258,8 @@ int Data::read(string &filename) {
             fObj_[i] = -fObj_[i];
         }
         fObjSense = 1;
-        scale_lobj = -1;   
+        // scale_lobj = -1;   
+        scale_lobj = 1;   
     } else scale_lobj = 1; 
 #ifdef DATA_DEBUG
     for (i = 0; i < n_f_; i++) {

@@ -44,8 +44,8 @@ public:
     void loadProblem(Data &data);
     void createProblem();
     
-    void updateProblem(double* xVals);
-    void updateUBProblem(double* xUBs, double* xLBs);
+    void updateProblem(double* &xVals);
+    void updateUBProblem(double* &xUBs, double* &xLBs);
     
     int solve();
     
@@ -55,8 +55,9 @@ public:
     double getDyVal(IloNumArray &yVals);
     IloCplex * getCplexPtr() {return &cplex_;};
     double getObjVal() {return objVal_;};
-    double getStatus() {return status_;};
+    IloAlgorithm::Status getStatus() {return status_;};
     double getbigM() {return M_;};
+    double getLB() {return fLB_;};
     double getCheck() {return check_;};
     IloNumArray * getpsiValsPtr() {return &psiVals_;};
     IloNumArray * getpsiValsPtr_yLBs() {return &psiVal_yLBs_;};
@@ -64,6 +65,7 @@ public:
     IloExpr * getdyExprPtr() {return &dy_expr_;};
 
     void setfUb(double M) {M_ = M;};
+    void setLB(double fLB) {fLB_ = fLB;};
 
 private:
 
@@ -139,7 +141,7 @@ private:
     IloNumArray psiVals_;
     IloNumArray psiVal_yLBs_, psiVal_yUBs_;
 
-    double M_;
+    double M_, fLB_;
 
     double * xbar_coef_;
     IloNum check_, constant_;

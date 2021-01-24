@@ -1,5 +1,5 @@
 #include "usercutCBfUB.h"
-
+// #define CALLBACK_DEBUG
 IloCplex::Callback BendersUserCallback(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy,
                         LazyData &lazyData, Follower &follower){
@@ -11,7 +11,15 @@ void BendersUserCallbackI::main(){
     if (!isAfterCutLoop())
         return;
     
+    // if (getCurrentNodeDepth() < 10)
+    //     return;
+    /* or in CPLEX 12.7, we can use getNnodes < 300 */
+
     int i;
+
+#ifdef CALLBACK_DEBUG
+   auto start_t = chrono::system_clock::now();
+#endif
 
     getLBs(lazyData_.xLBs_ilo, xVars_);
     getUBs(lazyData_.xUBs_ilo, xVars_);
@@ -46,9 +54,10 @@ void BendersUserCallbackI::main(){
    ticToc_ = (chrono::system_clock::now() - start_t);
    cout << "time in solving fUB: " << ticToc_.count() << endl;
    start_t = chrono::system_clock::now();
+   cout << "status: " << follower_.getStatus() << endl;
 #endif
 
-    if (follower_.getStatus() == IloAlgorithm::Status::Optimal) {
+    if (follower_.getStatus() == IloAlgorithm::Status::Optimal || follower_.getStatus() == IloAlgorithm::Status::Feasible) {
 
         double FUB = follower_.getObjVal();
         double dyVal = follower_.getDyVal(lazyData_.bary);

@@ -20,7 +20,7 @@ class BendersUserCallbackXI : public IloCplex::UserCutCallbackI {
     chrono::duration<double> ticToc_;
     
 public:
-  ILOCOMMONCALLBACKSTUFF(BendersUserCallbackX) \
+  ILOCOMMONCALLBACKSTUFF(BendersUserCallbackX); 
   BendersUserCallbackXI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, FollowerX &followerx)
     : IloCplex::UserCutCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), followerx_(followerx) {};
   void main();

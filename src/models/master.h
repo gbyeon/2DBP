@@ -15,7 +15,10 @@
 #include "heuristicCBIncumbentUpdate.h"
 #include "usercutCBfUB.h"
 #include "usercutCBfUBx.h"
+#include "usercutCBfUBhpp.h"
 #include "usercutCBBendersMC.h"
+#include "branchCB.h"
+#include "nodeCB.h"
 
 class Master {
 public:
@@ -37,7 +40,7 @@ public:
     void createProblem (); 
 
     int solve();
-    void solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower);
+    void solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower, Data &data);
 
     /* get functions */
     /* get environment */
@@ -79,6 +82,7 @@ private:
         IloRangeArray l, f;
         IloRangeArray yLBs, yUBs; 
         IloRangeArray xBds;
+        // IloRange fObj;
 
         // For Benders & cut class = d
         IloRangeArray optCuts, feasCuts; // for master

@@ -5,7 +5,10 @@ set(SRC
     callbacks/heuristicCBIncumbentUpdate.cpp
     callbacks/usercutCBfUB.cpp
     callbacks/usercutCBfUBx.cpp
+    callbacks/usercutCBfUBhpp.cpp
     callbacks/usercutCBBendersMC.cpp
+    callbacks/branchCB.cpp
+    callbacks/nodeCB.cpp
     models/hpp.cpp
     models/master.cpp
     models/follower.cpp
