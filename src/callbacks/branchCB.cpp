@@ -33,8 +33,14 @@ void branchCallbackI::main() {
             cons_up.end();
 
         }
-    } catch (...) {
-        throw;
+    } catch (IloException &e) {
+        cerr << "CPLEX found the following exception: " << e << " in branchCB.cpp" << endl;
+        e.end();
     }
+    catch (...) {
+        cerr << "The following unknown exception was found in branchCB.cpp: " << endl;
+    }
+
+    return;
 }
 

@@ -179,7 +179,7 @@ void Master::createProblem () {
     start_t = chrono::system_clock::now();
 #endif
 
-    // /* add follower objective constraint: dy <= 0 */
+    /* add follower objective constraint: dy <= 0 */
     // addfObjConstr();
 
     /* define cplex */
@@ -214,8 +214,8 @@ void Master::createProblem () {
     // if (!sett.is_callback)
         // cplex_.setOut(env_->getNullStream());
 
-    cplex_.setParam(IloCplex::Param::Preprocessing::Reduce, 1);
-    cplex_.setParam(IloCplex::Param::Preprocessing::Linear, CPX_OFF);
+    // cplex_.setParam(IloCplex::Param::Preprocessing::Reduce, 1);
+    // cplex_.setParam(IloCplex::Param::Preprocessing::Linear, CPX_OFF);
     cplex_.setParam(IloCplex::Param::MIP::Tolerances::Integrality, 1e-9);
 //    master.cplex.setParam(IloCplex::Param::MIP::Tolerances::Linearization, 1e-9);
     // cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
@@ -317,49 +317,64 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
     /* calculate upper bound of follower obj val */
     if (hpp.solvefUb())
         follower.setfUb(hpp.getfUb());
+    /* else follower.setfUb(100000); or throw error */
     if (hpp.solvefLb())
         follower.setLB(hpp.getfLb());
-    cout << "follower Lb: " << follower.getLB() << endl;
-    // follower.setfUb(100000);
     // constrs_.fObj.setLB(-hpp.getfUb());
 
     double blb = 0;
     double bub = 0;
     bool is_ended = false;
-
     lazyData_ = LazyData (n_l_, n_f_, *env_);
-    /* lazyCBBenders.h */
-    cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
-    /* lazyCBBendersMC.h */
-    // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
-    /* heuristicCBIncumbentUpdate.h */
-    cplex_.use(incumbentUpdateCallback(*env_, vars_.x, lazyData_));
-    /* usercutCBBendersMC.h */
-    // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
-    /* usercutCBfUB.h */
-    //  cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
-    /* usercutCBfUBx.h */
-    // cplex_.use(BendersUserCallbackX(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, followerx));
-    /* usercutCBfUBhpp.h */
-    // cplex_.use(BendersUserCallbackHpp(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, hpp));
-    /* branchCB.h */
-    cplex_.use(branchCallback(*env_, vars_.x, vars_.y, vars_.t, dy_expr_, lazyData_, &blb, &bub, &is_ended, follower, leaderFollower));
 
-    cplex_.use(nodeSelectCallback(*env_, &blb, &bub, &is_ended, follower.getLB(), follower.getbigM() - follower.getLB()));
+    try {
+        /* lazyCBBenders.h */
+        cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        /* lazyCBBendersMC.h */
+        // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        /* heuristicCBIncumbentUpdate.h */
+        cplex_.use(incumbentUpdateCallback(*env_, vars_.x, lazyData_));
+        /* usercutCBBendersMC.h */
+        // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        /* usercutCBfUB.h */
+        //  cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
+        /* usercutCBfUBx.h */
+        // cplex_.use(BendersUserCallbackX(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, followerx));
+        /* usercutCBfUBhpp.h */
+        // cplex_.use(BendersUserCallbackHpp(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, hpp));
+        /* branchCB.h */
+        // cplex_.use(branchCallback(*env_, vars_.x, vars_.y, vars_.t, dy_expr_, lazyData_, &blb, &bub, &is_ended, follower, leaderFollower));
+        /* nodeCB.h */
+        // cplex_.use(nodeSelectCallback(*env_, &blb, &bub, &is_ended, follower.getLB(), follower.getbigM() - follower.getLB()));
+        /* nodeCBfObj.h */
+        bool node_type = false;
+        IloInt64 node_id = -1;
+        cplex_.use(nodeSelectCallbackfObj(*env_, &node_type, &node_id));
+        /* branchCBfObj.h */
+        cplex_.use(branchCallbackfObj(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id));
 
-    if (!cplex_.solve()) {
-        env_->error() << "Failed to optimize master." << endl;
-        throw (-1);
+        if (!cplex_.solve()) {
+            env_->error() << "Failed to optimize master." << endl;
+            throw (-1);
+        }
+
+        if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
+            objVal_ = -3e+6;
+        else
+            objVal_ = cplex_.getObjValue();
+        bestObjVal_ = cplex_.getBestObjValue();
+        cplex_.getValues(xVals_, vars_.x);
+        tVal_ = cplex_.getValue(vars_.t);
+        gap_ = cplex_.getMIPRelativeGap();
+
+        ticToc_ = chrono::system_clock::now() - start_t;
+    } catch (IloException &e) {
+        cerr << "CPLEX found the following exception: " << e << " in master.cpp" << endl;
+        e.end();
+    }
+    catch (...) {
+        cerr << "The following unknown exception was found in master.cpp: " << endl;
     }
 
-    if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
-        objVal_ = -3e+6;
-    else
-        objVal_ = cplex_.getObjValue();
-    bestObjVal_ = cplex_.getBestObjValue();
-    cplex_.getValues(xVals_, vars_.x);
-    tVal_ = cplex_.getValue(vars_.t);
-    gap_ = cplex_.getMIPRelativeGap();
-
-    ticToc_ = chrono::system_clock::now() - start_t;
+    return;
 }

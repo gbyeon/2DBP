@@ -18,7 +18,9 @@
 #include "usercutCBfUBhpp.h"
 #include "usercutCBBendersMC.h"
 #include "branchCB.h"
+#include "branchCBfObj.h"
 #include "nodeCB.h"
+#include "nodeCBfObj.h"
 
 class Master {
 public:

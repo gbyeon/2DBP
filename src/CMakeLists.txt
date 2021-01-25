@@ -8,12 +8,14 @@ set(SRC
     callbacks/usercutCBfUBhpp.cpp
     callbacks/usercutCBBendersMC.cpp
     callbacks/branchCB.cpp
+    callbacks/branchCBfObj.cpp
     callbacks/nodeCB.cpp
+    callbacks/nodeCBfObj.cpp
     models/hpp.cpp
     models/master.cpp
     models/follower.cpp
     models/followerMC.cpp
-    models/followerX.cpp
+    models/followerx.cpp
     models/leaderfollower.cpp
     )
 
