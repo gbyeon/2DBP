@@ -53,7 +53,7 @@ public:
     void getResults();
     IloCplex * getCplexPtr() {return &cplex_;};
     double getObjVal() {return objVal_;};
-    double getStatus() {return status_;};
+    IloAlgorithm::Status getStatus() {return status_;};
     double getCheck() {return check_;};
     IloNumArray * getyValsPtr() {return &yVals_;};
     vector<IloNumArray> * getnuValsVector() {return &nuVals_;};

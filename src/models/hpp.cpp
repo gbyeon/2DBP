@@ -209,6 +209,7 @@ void Hpp::createProblem () {
     cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
     cplex_.setParam(IloCplex::Param::MIP::Strategy::VariableSelect, CPX_VARSEL_STRONG);
 
+    setTimeLimit(3600);
     // /* set branching priority */
     // /* if x appears in follower problem, increase priority */
     // vector<int> priority(n_l_, 0);
@@ -236,6 +237,22 @@ void Hpp::createProblem () {
 
 }
 
+void Hpp::updateUBProblem (IloNumArray &xUBs, IloNumArray &xLBs) {
+    
+    for (int i=0; i < n_l_; i++) {
+        if (xUBs[i] > 1)
+            xUBs[i] = 1;
+        if (xLBs[i] < 0)
+            xLBs[i] = 0;
+    }
+
+    cplex_.getObjective().setSense(IloObjective::Sense::Maximize);
+    cplex_.getObjective().setExpr(dy_expr_);
+
+    vars_.x.setBounds(xLBs, xUBs);
+    // cplex_.exportModel("hpp_ub_updated.lp");
+}
+
 int Hpp::solve() {
     auto start_t = chrono::system_clock::now();
 
@@ -244,13 +261,15 @@ int Hpp::solve() {
         throw (-1);
     }
 
-    if (cplex_.getStatus() != IloAlgorithm::Status::Optimal
-        && cplex_.getStatus() != IloAlgorithm::Status::Unbounded ) {
-        cout << "hpp is terminated w/ status " << cplex_.getStatus() << endl;
+    status_ = cplex_.getStatus();
+
+    if (status_ != IloAlgorithm::Status::Optimal
+        && status_ != IloAlgorithm::Status::Unbounded ) {
+        cout << "hpp is terminated w/ status " << status_ << endl;
         return 1;
     }
 
-    if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
+    if (status_ == IloAlgorithm::Status::Unbounded)
         objVal_ = -3e+6;
     else
         objVal_ = cplex_.getObjValue();
@@ -284,7 +303,8 @@ bool Hpp::solvefUb () {
         // return false;
     }
 
-    if (cplex_.getStatus() == IloAlgorithm::Status::Optimal || cplex_.getStatus() == IloAlgorithm::Status::Feasible) {
+    status_ = cplex_.getStatus();
+    if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
 
         fUB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
         cout << "f.M: " << fUB_ << endl;
@@ -297,4 +317,48 @@ bool Hpp::solvefUb () {
 
     setTimeLimit(original_time_limit);
     return true;
+}
+
+bool Hpp::solvefLb () {
+
+    // set timelimit and use best upper bounds
+
+    cplex_.getObjective().setSense(IloObjective::Sense::Minimize);
+    cplex_.getObjective().setExpr(dy_expr_);
+    
+    double original_time_limit = timelimit_;
+    setTimeLimit(100);
+    
+//    cplex_.exportModel("fub.lp");
+
+    if (!cplex_.solve()) {
+        env_->error() << "Failed to optimize fLB." << endl;
+        return false;
+    }
+
+    status_ = cplex_.getStatus();
+    if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
+
+        fLB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
+        cout << "f.LB: " << fLB_ << endl;
+
+    } else {
+
+        cout << "Follower does not have finite LB" << endl;
+        return false;
+    }
+
+    setTimeLimit(original_time_limit);
+    return true;
+}
+
+double Hpp::getDyVal(IloNumArray &yVals) {
+    int i; 
+    double Dy = 0; 
+    for (i = 0; i < n_f_; i++)
+    {
+        Dy += fObj_[i] * yVals[i];
+    }
+
+    return Dy;
 }

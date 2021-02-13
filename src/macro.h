@@ -19,7 +19,7 @@
         char cname[80]; \
         sprintf(cname, "x_%d", i); \
         if ((this)->is_integer_[i]) \
-            (this)->vars_.x.add(IloNumVar(*((this)->env_), -IloInfinity, IloInfinity, ILOBOOL, cname));  \
+            (this)->vars_.x.add(IloNumVar(*((this)->env_), 0, 1, ILOBOOL, cname));  \
         else {  \
             /* if it's continuous, the original indices are researved */    \
             (this)->vars_.x.add(IloNumVar(*((this)->env_), (this)->xlb_[i], (this)->xub_[i], ILOFLOAT, cname));    \

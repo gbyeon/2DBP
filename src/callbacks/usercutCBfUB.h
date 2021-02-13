@@ -17,9 +17,10 @@ class BendersUserCallbackI : public IloCplex::UserCutCallbackI {
     LazyData &lazyData_;
     Follower &follower_;
     IloExpr &dy_;
+    chrono::duration<double> ticToc_;
     
 public:
-  ILOCOMMONCALLBACKSTUFF(BendersUserCallback) \
+  ILOCOMMONCALLBACKSTUFF(BendersUserCallback);
   BendersUserCallbackI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower)
     : IloCplex::UserCutCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), follower_(follower) {};
   void main();

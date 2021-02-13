@@ -40,7 +40,14 @@ public:
     chrono::duration<double> getTicToc(){return ticToc_;};
 
     bool solvefUb();
+    bool solvefLb();
     double getfUb(){return fUB_;};
+    double getfLb(){return fLB_;};
+    void updateUBProblem(IloNumArray &xUBs, IloNumArray &xLBs);
+
+    double getDyVal(IloNumArray &yVals);
+    IloAlgorithm::Status getStatus() {return status_;};
+    IloCplex getCplex() {return cplex_;};
 
     /* set functions */
     void setTimeLimit(double timelimit) {
@@ -158,7 +165,9 @@ private:
     chrono::duration<double> ticToc_;
     double timelimit_;
 
-    double fUB_;
+    double fUB_, fLB_;
+
+    IloAlgorithm::Status status_;
 };
 
 #endif //BILEVEL_HPP_H

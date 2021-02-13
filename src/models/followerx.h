@@ -51,7 +51,7 @@ public:
     void getResults();
     IloCplex * getCplexPtr() {return &cplex_;};
     double getObjVal() {return objVal_;};
-    double getStatus() {return status_;};
+    IloAlgorithm::Status getStatus() {return status_;};
     IloExpr * getdyExprPtr() {return &dy_expr_;};
     double getDyVal(IloNumArray &yVals);
 

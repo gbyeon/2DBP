@@ -15,8 +15,11 @@ void incumbentUpdateCallbackI::main() {
                 lazyData_.found_new_incumbent = false;
             }
         }
+    } catch (IloException &e) {
+        cerr << "CPLEX found the following exception: " << e << " in heuristicCBInbumbentUpdate.cpp" << endl;
+        e.end();
     }
     catch (...) {
-        throw;
+        cerr << "The following unknown exception was found in heuristicCBInbumbentUpdate.cpp: " << endl;
     }
 }

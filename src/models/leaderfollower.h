@@ -58,7 +58,7 @@ public:
     void getResults ();
 
     IloCplex * getCplexPtr() {return &cplex_;};
-    double getStatus() {return status_;};
+    IloAlgorithm::Status getStatus() {return status_;};
     double getCheck() {return check_;};
     double getwVal() {return wVal_;};
     double getObjVal() {return objVal_;};
