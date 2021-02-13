@@ -297,7 +297,10 @@ bool Hpp::solvefUb () {
 
     if (!cplex_.solve()) {
         env_->error() << "Failed to optimize fUB." << endl;
-        return false;
+        cout << cplex_.getStatus() << endl;
+        fUB_ = 1e+9;
+        return true;
+        // return false;
     }
 
     status_ = cplex_.getStatus();

@@ -258,8 +258,8 @@ int Data::read(string &filename) {
             fObj_[i] = -fObj_[i];
         }
         fObjSense = 1;
-        scale_lobj = -1;   
         // scale_lobj = 1;   
+        scale_lobj = -1;   
     } else scale_lobj = 1; 
 #ifdef DATA_DEBUG
     for (i = 0; i < n_f_; i++) {
