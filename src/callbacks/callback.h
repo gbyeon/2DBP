@@ -10,6 +10,8 @@
 
 #include <ilcplex/ilocplex.h>
 
+using namespace std;
+
 /* data or data structure or setting used in lazy callback */
 struct LazyData {
     
@@ -67,6 +69,7 @@ struct LazyData {
         // outputConsole= true;
         use_normalization = false;   
         found_new_incumbent = false;
+        current_best_ub = 1e+100;	
     }
 
     ~LazyData() {
@@ -93,6 +96,13 @@ struct LazyData {
         //     bary.end();
         // }
     }
+};
+
+struct UserNodeData : public IloCplex::BranchCallbackI::NodeData {
+    public:
+    UserNodeData(int ID) : id(ID) {}
+    UserNodeData(double lb, double ub) : dy_lb(lb), dy_ub(ub) {}
+    double dy_lb, dy_ub, id;
 };
 
 #endif //BILEVEL_CALLBACK_H

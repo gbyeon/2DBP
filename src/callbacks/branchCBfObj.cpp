@@ -32,11 +32,11 @@ void branchCallbackfObjI::main() {
                 {
                     // cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << endl;
 
-                    IloConstraint con_down = dy_ <= (fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
-                    IloConstraint con_up = dy_ >= (fObjVal_ystar + fObjVal_ytilde) / 2; 
+                    IloConstraint con_down = dy_ <= floor(fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
+                    IloConstraint con_up = dy_ >= floor(fObjVal_ystar + fObjVal_ytilde) / 2; 
 
-                    NodeData *node_down = new NodeData(-1);
-                    NodeData *node_up = new NodeData(*node_id);      
+                    UserNodeData *node_down = new UserNodeData(-1);
+                    UserNodeData *node_up = new UserNodeData(*node_id);      
                     // cout << "node_id at branchCB: " << *node_id << endl;          
                     makeBranch(con_down, current_master_objVal, node_down);
                     makeBranch(con_up, current_master_objVal, node_up);
@@ -50,7 +50,6 @@ void branchCallbackfObjI::main() {
                 }
             }
         }
-        
     } catch (IloException &e) {
         cerr << "CPLEX found the following exception: " << e << " in branchCBfObj.cpp" << endl;
         e.end();

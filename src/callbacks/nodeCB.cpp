@@ -8,9 +8,11 @@ void nodeSelectCallbackI::main() {
    
    if (!*isEnded) {
    for (IloInt i = 0; i < remainingNodes; i++) {
+      
       if (getNodeData(i))
       {
-         cout << i << ": " << getNodeData(i)->dy_lb <<  ", " << getNodeData(i)->dy_ub << endl;
+         UserNodeData * nd = (UserNodeData *) getNodeData(i);
+         cout << i << ": " << nd->dy_lb <<  ", " << nd->dy_ub << endl;
       }
    }
    
@@ -60,7 +62,8 @@ void nodeSelectCallbackI::main() {
          for (IloInt i = 0; i < remainingNodes; i++) {
             if (getNodeData(i))
             {
-               if (*blb == getNodeData(i)->dy_lb && *bub == getNodeData(i)->dy_ub){
+               UserNodeData * nd = (UserNodeData *) getNodeData(i);
+               if (*blb == nd->dy_lb && *bub == nd->dy_ub){
                   selectNode(i);
                   cout << "chosen i: " << i << endl;
                   break;

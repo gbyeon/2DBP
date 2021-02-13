@@ -49,7 +49,7 @@ public:
     //     barx.end();
     //     bary.end();
     // };
-    void main();
+    void main() override;
 };
 
 IloCplex::Callback branchCallbackfObj(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,

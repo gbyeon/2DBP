@@ -15,7 +15,7 @@ void nodeSelectCallbackfObjI::main() {
       IloInt remainingNodes = getNremainingNodes();
       IloInt nNodes = getNnodes();
 
-      if (count >= 3 && nNodes <= 50000) 
+      if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000))
       {
          
          #ifdef DEBUG 
@@ -60,7 +60,8 @@ void nodeSelectCallbackfObjI::main() {
             {
                if (getNodeData(i))
                {
-                  if (*node_id == getNodeData(i)->id)
+                  UserNodeData * nd = (UserNodeData *) getNodeData(i);
+                  if (*node_id == nd->id)
                   {
                      selectNode(i);
                      break;

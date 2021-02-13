@@ -21,6 +21,8 @@
 
 #include <macro.h>
 
+using namespace std;
+
 class Data {
 public:
     int read(string &filename);

@@ -18,7 +18,7 @@ public:
   incumbentUpdateCallbackI(IloEnv env, IloNumVarArray& xVars, LazyData& lazyData) :
                             IloCplex::HeuristicCallbackI(env), 
                             xVars_(xVars), lazyData_(lazyData) {};
-  void main();
+  void main() override;
 };
 IloCplex::Callback incumbentUpdateCallback(IloEnv env, IloNumVarArray& xVars, LazyData& lazyData);
 

@@ -22,7 +22,7 @@ public:
       current_best_objVal = -INFINITY;
   };
   
-  void main();
+  void main() override;
   
   IloInt i;
   int count;

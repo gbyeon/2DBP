@@ -218,7 +218,7 @@ void Master::createProblem () {
     // cplex_.setParam(IloCplex::Param::Preprocessing::Linear, CPX_OFF);
     cplex_.setParam(IloCplex::Param::MIP::Tolerances::Integrality, 1e-9);
 //    master.cplex.setParam(IloCplex::Param::MIP::Tolerances::Linearization, 1e-9);
-    // cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
+    cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
 
     // cplex_.setParam(IloCplex::Param::Threads, 1);
 //    master.cplex.setParam(IloCplex::Param::Preprocessing::Presolve, IloFalse);

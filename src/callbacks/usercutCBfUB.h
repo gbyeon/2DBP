@@ -23,7 +23,7 @@ public:
   ILOCOMMONCALLBACKSTUFF(BendersUserCallback);
   BendersUserCallbackI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower)
     : IloCplex::UserCutCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), follower_(follower) {};
-  void main();
+  void main() override;
 };
 IloCplex::Callback BendersUserCallback(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy, 

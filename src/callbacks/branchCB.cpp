@@ -24,8 +24,8 @@ void branchCallbackI::main() {
 
             cout << "halve the range using : " << (*bub - *blb) / 2 << endl;
             
-            NodeData *node_down = new NodeData(*blb, *blb + (*bub - *blb) / 2);
-            NodeData *node_up = new NodeData(*blb + (*bub - *blb) / 2, *bub);                
+            UserNodeData *node_down = new UserNodeData(*blb, *blb + (*bub - *blb) / 2);
+            UserNodeData *node_up = new UserNodeData(*blb + (*bub - *blb) / 2, *bub);                
             makeBranch(cons_down, lazyData_.current_master_objVal, node_down);
             makeBranch(cons_up, lazyData_.current_master_objVal, node_up);
                     

@@ -22,7 +22,7 @@ public:
       frange = fRange;
       isEnded = isended;
   };
-  void main();
+  void main() override;
   int call_;
   int k, l, j;
   double *blb, *bub;

@@ -37,7 +37,7 @@ public:
         n_l = lazyData.n_l;
         isEnded = isended;
     };
-  void main();
+  void main() override;
 };
 
 IloCplex::Callback branchCallback(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloNumVar &tVar,

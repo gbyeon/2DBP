@@ -47,7 +47,7 @@ public:
                         IloCplex::LazyConstraintCallbackI(env), follower_(follower), leaderFollower_(leaderFollower), xVars_(xVars), tVar_(tVar), dy_(dy), lazyData_(lazyData) {
                             tol_ = 1e-4;
                         };
-    void main();
+    void main () override;
     int addBendersCuts();
     int solveSubs();
 };

@@ -11,8 +11,6 @@
 
 int getArgValues (int argc, char *argv[], string &filename, double * &testValue){
 
-    cout << "This program was called with " << argv[0] << endl;
-
     for (int i = 0; i < floor((double) argc / (double) 2); i++) {
 
         int j = 2 * i + 1;
@@ -27,66 +25,15 @@ int getArgValues (int argc, char *argv[], string &filename, double * &testValue)
             testValue = new double;
             *testValue = stod(argv[v]);
             cout << "testing value: " << *testValue << endl;
-        } 
-        
-        // else if (strcmp(argv[j], "-m") == 0) {
+        }
+    } 
 
-        //     // solution method
-        //     if (strcmp(argv[v], "MIP") == 0)
-        //         sett.is_MIP = true;
-        //     else if (strcmp(argv[v], "Benders") == 0)
-        //         sett.is_MIP = false;
-        //     else if (strcmp(argv[v], "Callback") == 0) {
-        //         sett.is_callback = true;
-        //         sett.is_MIP = false;
-        //     } else {
-        //         cout << "-m should be chosen among 'MIP', 'Benders', 'Callback'" << endl;
-        //         return 1;
-        //     }
-        // } 
-        // else if (strcmp(argv[j], "-c") == 0) {
-
-        //     // Benders cut type
-        //     if (strcmp(argv[v], "o") == 0)      // original
-        //         sett.cutStyle = "o";
-        //     else if (strcmp(argv[v], "d") == 0) // decomposed
-        //         sett.cutStyle = "d";
-        //     else if (strcmp(argv[v], "m") == 0) // modified
-        //         sett.cutStyle = "m";
-        //     else {
-        //         cout << "-c should be chosen among 'o', 'd', 'm'" << endl;
-        //         return 1;
-        //     }
-        // } else if (strcmp(argv[j], "-nc") == 0) {
-
-        //     sett.use_nogoodcut = stoi(argv[v]);
-
-        // } else if (strcmp(argv[j], "-n") == 0) {
-        //     /* normalized ray */
-        //     sett.use_normalization = stoi(argv[v]);
-
-        // } else if (strcmp(argv[j], "-i") == 0) {
-        //     /* in-out method */
-        //     sett.use_in_out = stoi(argv[v]);
-
-        // } else if (strcmp(argv[j], "-o") == 0) {
-        //     sett.outputConsole = stoi(argv[v]);
-        // } else if (strcmp(argv[j], "-LBCut") == 0) {
-        //     sett.useLBCut = stoi(argv[v]);
-        // } else if (strcmp(argv[j], "-p") == 0) {
-        //     sett.preprosessing = stoi(argv[v]);
-        // }
-    }
-
-//    // check
-//    cout << "File: " << instance.name << endl;
-//    cout << "is_MIP: " <<  sett.is_MIP << endl;
-//    cout << "norm: " << sett.use_normalization << endl;
-//    cout << "inout: " << sett.use_in_out << endl;
-
+   // check
+    cout << "This program was called with " << argv[0] << endl;
+    cout << "filename: " << filename << endl;
+ 
     return 0;
 }
-
 
 int main (int argc, char *argv[]) {
 
@@ -111,7 +58,7 @@ int main (int argc, char *argv[]) {
     
     /* create follower problem with x:
      * min dy : Ax + By >= b      (f)
-     *          x, y bounds       (yLbs, yUbs)
+     *          x, y bounds       (xBds, yLbs, yUbs)
      */
     FollowerX followerx;
     // followerx.loadProblem(data);
