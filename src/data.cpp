@@ -49,6 +49,7 @@ int Data::read(string &filename) {
     
     int obj_cnt = 0;
     int fObjSense;
+    int objSense = -1;
     
     /* leader obj sense is assumed to be the same as the fObjSense */
     int scale_lobj;
@@ -256,7 +257,8 @@ int Data::read(string &filename) {
             fObj_[i] = -fObj_[i];
         }
         fObjSense = 1;
-        scale_lobj = -1;   
+        // scale_lobj = -1;   
+        scale_lobj = 1;   
     } else scale_lobj = 1; 
 #ifdef DATA_DEBUG
     for (i = 0; i < n_f_; i++) {

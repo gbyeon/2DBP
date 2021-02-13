@@ -136,6 +136,7 @@ void BendersLazyCallbackI::main(){
             if (tVal_ - tol_ <= actual_tVal_) {
 #ifdef CALLBACK_DEBUG
                cout << "tVal: " << tVal_ << " vs " << actual_tVal_ << endl;
+               cout << "wVal_: " << wVal_ << endl;
 #endif
                 add(tVar_ >= lazyData_.termLf - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * lazyData_.indicatorTermx));
             }
