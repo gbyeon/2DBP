@@ -28,7 +28,7 @@ void branchCallbackfObjI::main() {
                 fObjVal_ystar = follower_.getObjVal();
                 fObjVal_ytilde = follower_.getDyVal(bary);
 
-                if (fObjVal_ystar < fObjVal_ytilde) 
+                if (fObjVal_ystar + 1e-8 <= fObjVal_ytilde) 
                 {
                     // cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << endl;
 
@@ -40,6 +40,13 @@ void branchCallbackfObjI::main() {
                     // cout << "node_id at branchCB: " << *node_id << endl;          
                     makeBranch(con_down, current_master_objVal, node_down);
                     makeBranch(con_up, current_master_objVal, node_up);
+                } else {
+                    // if (isIntegerFeasible())
+                    // {
+                    //     /* bilevel feasible */
+                    //     cout << "found a bilevel feasible node. Prune the node..." << endl;
+                    //     prune();
+                    // }
                 }
             }
         }

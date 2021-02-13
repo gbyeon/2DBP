@@ -12,9 +12,12 @@ void nodeSelectCallbackfObjI::main() {
       else count = 0;
       current_best_objVal = getBestObjValue();
 
-      if (count >= 3) 
+      IloInt remainingNodes = getNremainingNodes();
+      IloInt nNodes = getNnodes();
+
+      if (count >= 3 && nNodes <= 50000) 
       {
-         IloInt remainingNodes = getNremainingNodes();
+         
          #ifdef DEBUG 
          cout << "number of remaining nodes: " << remainingNodes << endl;
          #endif
@@ -39,7 +42,7 @@ void nodeSelectCallbackfObjI::main() {
             cout << "node " << bestnode << " with objVal " << bestbound << " selected" << endl;
             #endif
 
-            if (bestnode > -1 && !getNodeData(bestnode))
+            if (bestnode > -1)// && !getNodeData(bestnode))
             {   
                selectNode(bestnode);
                *node_type = true;
