@@ -65,8 +65,8 @@ struct LazyData {
 
         // tolerance = 1e-4;
         // outputConsole= true;
-        use_normalization = false;   
-        found_new_incumbent = false;
+        use_normalization = false;
+     current_best_ub = 1e+100;	
     }
 
     ~LazyData() {

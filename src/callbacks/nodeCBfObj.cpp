@@ -1,5 +1,5 @@
 #include "nodeCBfObj.h"
-// #define DEBUG
+//#define DEBUG
 IloCplex::Callback nodeSelectCallbackfObj(IloEnv env, bool* nodeType, IloInt64 *nodeId) {
   return (IloCplex::Callback(new (env) nodeSelectCallbackfObjI(env, nodeType, nodeId)));
 }
@@ -12,19 +12,17 @@ void nodeSelectCallbackfObjI::main() {
       else count = 0;
       current_best_objVal = getBestObjValue();
 
-      IloInt remainingNodes = getNremainingNodes();
       IloInt nNodes = getNnodes();
 
-      if (count >= 3 && nNodes <= 50000) 
+      if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000)) 
       {
-         
-         #ifdef DEBUG 
+         IloInt remainingNodes = getNremainingNodes();
+  	 #ifdef DEBUG 
          cout << "number of remaining nodes: " << remainingNodes << endl;
          #endif
          
          if (!*node_type) 
-         {
-            
+         {            
             bestnode = -1;
             bestbound = INFINITY;
             for (i = 0; i < remainingNodes; i++) 

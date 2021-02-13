@@ -27,27 +27,25 @@ void branchCallbackfObjI::main() {
             if (follower_.getStatus() == IloAlgorithm::Status::Optimal) {
                 fObjVal_ystar = follower_.getObjVal();
                 fObjVal_ytilde = follower_.getDyVal(bary);
+// cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << endl;
 
-                if (fObjVal_ystar + 1e-8 <= fObjVal_ytilde) 
+
+                if (fObjVal_ystar + 1e-6 <= fObjVal_ytilde) 
                 {
-                    // cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << endl;
-
-                    IloConstraint con_down = dy_ <= (fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
-                    IloConstraint con_up = dy_ >= (fObjVal_ystar + fObjVal_ytilde) / 2; 
+                    IloConstraint con_down = dy_ <= floor((fObjVal_ystar + fObjVal_ytilde) / 2); /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
+                    IloConstraint con_up = dy_ >= floor((fObjVal_ystar + fObjVal_ytilde) / 2); 
 
                     NodeData *node_down = new NodeData(-1);
                     NodeData *node_up = new NodeData(*node_id);      
                     // cout << "node_id at branchCB: " << *node_id << endl;          
                     makeBranch(con_down, current_master_objVal, node_down);
                     makeBranch(con_up, current_master_objVal, node_up);
-                } else {
-                    // if (isIntegerFeasible())
-                    // {
-                    //     /* bilevel feasible */
-                    //     cout << "found a bilevel feasible node. Prune the node..." << endl;
-                    //     prune();
-                    // }
-                }
+                } else 
+		{
+		//	/* bilevel feasible */
+	//		cout << "found a bilevel feasible node. Prune the node..." << endl;
+	//	if (isIntegerFeasible())	prune();
+		}
             }
         }
         
