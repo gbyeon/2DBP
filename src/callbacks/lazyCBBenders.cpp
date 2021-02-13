@@ -1,5 +1,6 @@
 #include "lazyCBBenders.h"
-// #define C_SOLVE_DEBUG
+//#define C_SOLVE_DEBUG
+//#define CALLBACK_DEBUG
 // #define addLocalCut
 
 IloCplex::Callback BendersLazyCallback(IloEnv env, Follower &follower, 
@@ -136,7 +137,6 @@ void BendersLazyCallbackI::main(){
             if (tVal_ - tol_ <= actual_tVal_) {
 #ifdef CALLBACK_DEBUG
                cout << "tVal: " << tVal_ << " vs " << actual_tVal_ << endl;
-               cout << "wVal_: " << wVal_ << endl;
 #endif
                 add(tVar_ >= lazyData_.termLf - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * lazyData_.indicatorTermx));
             }
@@ -160,7 +160,9 @@ void BendersLazyCallbackI::main(){
         if (cut_type_ == 1) {
 
             IloNum current_obj_val = lazyData_.current_master_objVal - tVal_ + lfobjval_;
-
+#ifdef CALLBACK_DEBUG
+	    cout<< "current_obj_val: " << current_obj_val << ", current_best_ub: " << lazyData_.current_best_ub << endl;
+#endif
             if (current_obj_val < lazyData_.current_best_ub) {
 //        if (current_obj_val - tolerance_ <= current_best_ub_) {
                 lazyData_.current_best_ub = current_obj_val;
