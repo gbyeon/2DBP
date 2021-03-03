@@ -60,7 +60,7 @@ int main (int argc, char *argv[]) {
      * min dy : Ax + By >= b      (f)
      *          x, y bounds       (xBds, yLbs, yUbs)
      */
-    FollowerX followerx;
+    // FollowerX followerx;
     // followerx.loadProblem(data);
     // followerx.createProblem();
     
@@ -89,7 +89,7 @@ int main (int argc, char *argv[]) {
     master.setTimeLimit(3600);
 
     /* solve using Benders implemented with callback */
-    master.solveCallback(follower, followerMC, followerx, leaderFollower, data);
+    master.solveCallback(follower, followerMC, leaderFollower, data);
     
     /* get results */
     cout << "objVal: " << master.getObjVal() << endl;

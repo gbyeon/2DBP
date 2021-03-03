@@ -39,7 +39,7 @@
 
 /* add unrestricted auxiliary var t (used in master) */
 #define addtVar() {    \
-    (this)->vars_.t = IloNumVar(*((this)->env_), -IloInfinity, IloInfinity, ILOFLOAT, "t");\
+    (this)->vars_.t = IloNumVar(*((this)->env_), -1e+19, IloInfinity, ILOFLOAT, "t");\
 }
 
 /* add nu variables */
@@ -221,6 +221,22 @@
             } else {    \
                 (this)->constrs_.nu.add(IloRange(*((this)->env_), 1, -(this)->vars_.nu[0][pos] -(this)->vars_.nu[1][pos] + (this)->vars_.nu[2][pos] + (this)->vars_.nu[3][pos], 1, rname));    \
             }   \
+            pos++;  \
+        }   \
+    }   \
+    (this)->m_.add((this)->constrs_.nu); \
+}
+
+/* add nu constraints for fUB:
+ * nu_{ij,1} - nu_{ij,2} + nu_{ij,3} - nu_{ij,4} = a_{ij} */
+#define addnuConstrfUB() { \
+    int i, j;   \
+    int pos = 0;    \
+    for (i = 0; i < (this)->m_f_; i++) {    \
+        for (j = 0; j < (this)->fC_lV_cnt_[i]; j++) {   \
+            char rname[80]; \
+            sprintf(rname, "nu_%d_%d", i, (this)->fC_lV_ind_[i][j]); \
+            (this)->constrs_.nu.add(IloRange(*((this)->env_), (this)->fC_lV_coef_[i][j], (this)->vars_.nu[0][pos] - (this)->vars_.nu[1][pos] + (this)->vars_.nu[2][pos] - (this)->vars_.nu[3][pos], (this)->fC_lV_coef_[i][j], rname));    \
             pos++;  \
         }   \
     }   \

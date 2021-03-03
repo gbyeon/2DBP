@@ -44,6 +44,9 @@ public:
     double getfUb(){return fUB_;};
     double getfLb(){return fLB_;};
     void updateUBProblem(IloNumArray &xUBs, IloNumArray &xLBs);
+    bool updateObjNu(double **nu1, double **nu4, IloNumArray &xlbs, IloNumArray &xubs, int &nnodes);
+    bool updateObjax(IloNumArray &xlbs, IloNumArray &xubs, IloNumArray &barx);
+    bool updateObjaxpsi(IloNumArray &xlbs, IloNumArray &xubs, IloNumArray &barx, IloNumArray *psiVal);
 
     double getDyVal(IloNumArray &yVals);
     IloAlgorithm::Status getStatus() {return status_;};
@@ -168,6 +171,12 @@ private:
     double fUB_, fLB_;
 
     IloAlgorithm::Status status_;
+
+    /* dual ub */
+    double dualUb_;
+    IloNumArray obj_;
+    IloExpr obj_expr_;
+    IloExpr ax_expr_;
 };
 
 #endif //BILEVEL_HPP_H

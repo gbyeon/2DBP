@@ -20,7 +20,7 @@ void branchCallbackfObjI::main() {
             for (i = 0; i < n_l; i++) {
                 xVals[i] = barx[i];
             }
-
+            
             follower_.updateProblem(xVals);
             follower_.solve();
 
@@ -35,8 +35,8 @@ void branchCallbackfObjI::main() {
                     IloConstraint con_down = dy_ <= floor(fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
                     IloConstraint con_up = dy_ >= floor(fObjVal_ystar + fObjVal_ytilde) / 2; 
 
-                    UserNodeData *node_down = new UserNodeData(-1);
-                    UserNodeData *node_up = new UserNodeData(*node_id);      
+                    UserNodeData *node_down = new UserNodeData(-100000, floor(fObjVal_ystar + fObjVal_ytilde) / 2, -1*(*node_id));
+                    UserNodeData *node_up = new UserNodeData(floor(fObjVal_ystar + fObjVal_ytilde) / 2, 100000, *node_id);      
                     // cout << "node_id at branchCB: " << *node_id << endl;          
                     makeBranch(con_down, current_master_objVal, node_down);
                     makeBranch(con_up, current_master_objVal, node_up);

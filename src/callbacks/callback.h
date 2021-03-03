@@ -102,6 +102,7 @@ struct UserNodeData : public IloCplex::BranchCallbackI::NodeData {
     public:
     UserNodeData(int ID) : id(ID) {}
     UserNodeData(double lb, double ub) : dy_lb(lb), dy_ub(ub) {}
+    UserNodeData(double lb, double ub, int ID) : dy_lb(lb), dy_ub(ub), id(ID) {}
     double dy_lb, dy_ub, id;
 };
 

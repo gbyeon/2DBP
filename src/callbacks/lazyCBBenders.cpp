@@ -11,20 +11,16 @@ IloCplex::Callback BendersLazyCallback(IloEnv env, Follower &follower,
 void BendersLazyCallbackI::main(){
     
     try {
-        int i;
-        int n_l = lazyData_.n_l;
+        
 #ifdef CALLBACK_DEBUG
         auto start_t = chrono::system_clock::now();
 #endif
         /* Get the current solution */
-        /* is it good to define as a member in this class? */
-        getValues(lazyData_.barx, xVars_);
-
+        getValues(barx_, xVars_);
         tVal_ = getValue(tVar_);
         lazyData_.current_master_objVal = getObjValue();
-        
         for (i = 0; i < n_l; i++) {
-            lazyData_.xVals[i] = lazyData_.barx[i];
+            xVals_[i] = barx_[i];
         }
 
 #ifdef CALLBACK_DEBUG
@@ -117,13 +113,13 @@ void BendersLazyCallbackI::main(){
 
                     if (cut_type_ == 1) {
                         if (tVal_ + tol_ <= actual_tVal_) {
-                            addLocal(tVar_ >= lazyData_.termLf - wVal_ 
-                                    * (fobjval_ + (FUB - fobjval_) * lazyData_.indicatorTermx));
+                            addLocal(tVar_ >= termLf_ - wVal_ 
+                                    * (fobjval_ + (FUB - fobjval_) * indicatorTermx_));
                         }
                     } else if (cut_type_ == 3) {
                         if (actual_tVal_ >= tol_) {
-                            addLocal(lazyData_.termLf - wVal_ 
-                                    * (fobjval_ + (FUB - fobjval_) * lazyData_.indicatorTermx) <= 0);
+                            addLocal(termLf_ - wVal_ 
+                                    * (fobjval_ + (FUB - fobjval_) * indicatorTermx_) <= 0);
                         }
                     } else {
                         cout << "Incorrect cut type" << endl;
@@ -138,14 +134,14 @@ void BendersLazyCallbackI::main(){
                cout << "tVal: " << tVal_ << " vs " << actual_tVal_ << endl;
                cout << "wVal_: " << wVal_ << endl;
 #endif
-                add(tVar_ >= lazyData_.termLf - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * lazyData_.indicatorTermx));
+                add(tVar_ >= termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_));
             }
         } else if (cut_type_ == 2) {
             if (fcheck_ >= tol_)
-                add(lazyData_.termfP <= 0);
+                add(termfP_ <= 0);
         } else if (cut_type_ == 3) {
             if (actual_tVal_ >= tol_)
-                add(lazyData_.termLf - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * lazyData_.indicatorTermx) <= 0);
+                add(termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_) <= 0);
         } else {
 
             cout << "Incorrect cut type" << endl;
@@ -166,7 +162,7 @@ void BendersLazyCallbackI::main(){
                 lazyData_.current_best_ub = current_obj_val;
                 cout << "*" << current_obj_val << endl;
 
-                lazyData_.feas_x = lazyData_.barx;
+                lazyData_.feas_x = barx_;
                 lazyData_.feas_t = lfobjval_;
 
                 lazyData_.found_new_incumbent = true;
@@ -188,7 +184,7 @@ int BendersLazyCallbackI::solveSubs() {
 
    auto start_t = chrono::system_clock::now();
 
-    follower_.updateProblem(lazyData_.xVals);
+    follower_.updateProblem(xVals_);
 
 #ifdef C_SOLVE_DEBUG
    ticToc_ = (chrono::system_clock::now() - start_t);
@@ -206,7 +202,7 @@ int BendersLazyCallbackI::solveSubs() {
 
     if (follower_.getStatus() == IloAlgorithm::Status::Optimal) {
 
-        leaderFollower_.updateProblem (lazyData_.xVals, follower_.getObjVal());
+        leaderFollower_.updateProblem (xVals_, follower_.getObjVal());
 
 #ifdef C_SOLVE_DEBUG
    ticToc_ = (chrono::system_clock::now() - start_t);
@@ -236,12 +232,12 @@ int BendersLazyCallbackI::solveSubs() {
     return 0;
 }
 int BendersLazyCallbackI::addBendersCuts(){
-    lazyData_.termfP.clear();
-    lazyData_.termLf.clear();
+    termfP_.clear();
+    termLf_.clear();
 
    auto start_t = chrono::system_clock::now();
 
-    follower_.getBendersTerms(lazyData_.termfP, xVars_, lazyData_.xVals);
+    follower_.getBendersTerms(termfP_, xVars_, xVals_);
 
 #ifdef C_SOLVE_DEBUG
    ticToc_ = (chrono::system_clock::now() - start_t);
@@ -250,7 +246,7 @@ int BendersLazyCallbackI::addBendersCuts(){
 #endif
 
     if (cut_type_ != 2)
-        leaderFollower_.getBendersTerms(lazyData_.termLf, xVars_, lazyData_.xVals);
+        leaderFollower_.getBendersTerms(termLf_, xVars_, xVals_);
 
 #ifdef C_SOLVE_DEBUG
    ticToc_ = (chrono::system_clock::now() - start_t);
@@ -258,13 +254,13 @@ int BendersLazyCallbackI::addBendersCuts(){
    start_t = chrono::system_clock::now();
 #endif
 
-    lazyData_.indicatorTermx.clear();
+    indicatorTermx_.clear();
 
-    for (int i = 0; i < lazyData_.n_l; i++) {
-        if (lazyData_.barx[i] > 0.5) {
-            lazyData_.indicatorTermx += 1 - xVars_[i];
+    for (i = 0; i < n_l; i++) {
+        if (barx_[i] > 0.5) {
+            indicatorTermx_ += 1 - xVars_[i];
         } else {
-            lazyData_.indicatorTermx += xVars_[i];
+            indicatorTermx_ += xVars_[i];
         }
     }
 

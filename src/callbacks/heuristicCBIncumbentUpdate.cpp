@@ -7,8 +7,8 @@ IloCplex::Callback incumbentUpdateCallback(IloEnv env, IloNumVarArray& xVars, La
 void incumbentUpdateCallbackI::main() {
     try {
         if (lazyData_.found_new_incumbent) {
-            if (lazyData_.current_best_ub < getIncumbentObjValue()) {
-//                cout << "setSolution()" << endl;
+            if (fabs(lazyData_.current_best_ub - getIncumbentObjValue()) > 1e-6) {
+               cout << "setSolution(): " << lazyData_.current_best_ub << endl;
                 setSolution(xVars_, lazyData_.feas_x, lazyData_.current_best_ub);
             }
             if (lazyData_.current_best_ub >= getIncumbentObjValue()) {

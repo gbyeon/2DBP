@@ -5,6 +5,9 @@
  *      Author: geunyeongbyeon
  */
 
+// #define M_BUILD_DEBUG
+// #define M_SOLVE_DEBUG
+
 #include "master.h"
 #include "macro.h"
 #include "hpp.h"
@@ -301,7 +304,7 @@ int Master::solve() {
     return 0;
 }
 
-void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower, Data &data){
+void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower, Data &data){
     
     auto start_t = chrono::system_clock::now();
     
@@ -319,7 +322,12 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
         follower.setfUb(hpp.getfUb());
     /* else follower.setfUb(100000); or throw error */
     if (hpp.solvefLb())
-        follower.setLB(hpp.getfLb());
+    {
+        follower.setLB(floor(hpp.getfLb()));
+        // leaderFollower.setfLB(floor(hpp.getfLb()));
+        // follower.updatefObjLb(floor(hpp.getfLb()));
+        // leaderFollower.updatefObjLb(floor(hpp.getfLb()));
+    }
     // constrs_.fObj.setLB(-hpp.getfUb());
 
     double blb = 0;
@@ -328,8 +336,12 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
     lazyData_ = LazyData (n_l_, n_f_, *env_);
 
     try {
+        // heuristic timelimit
+        setTimeLimit(180);
+        // cplex_.use(LazyCallbackfUBNu(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data));
         /* lazyCBBenders.h */
         cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        // cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
         /* lazyCBBendersMC.h */
         // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
         /* heuristicCBIncumbentUpdate.h */
@@ -338,8 +350,10 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
         // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
         /* usercutCBfUB.h */
         //  cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
-        /* usercutCBfUBx.h */
-        // cplex_.use(BendersUserCallbackX(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, followerx));
+        /* usercutCBfUBnu.h */
+        UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
+        cplex_.use(cb_fub_nu);
+        // cplex_.use(UserCallbackfUBNu(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data));
         /* usercutCBfUBhpp.h */
         // cplex_.use(BendersUserCallbackHpp(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, hpp));
         /* branchCB.h */
@@ -349,10 +363,19 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX
         /* nodeCBfObj.h */
         bool node_type = false;
         IloInt64 node_id = -1;
-        cplex_.use(nodeSelectCallbackfObj(*env_, &node_type, &node_id));
+        // cplex_.use(nodeSelectCallbackfObj(*env_, &node_type, &node_id));
         /* branchCBfObj.h */
-        cplex_.use(branchCallbackfObj(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id));
+        // cplex_.use(branchCallbackfObj(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id));
 
+        if (!cplex_.solve()) {
+            env_->error() << "Failed to optimize master." << endl;
+            throw (-1);
+        }
+
+        /* resolve without heuristic */
+        setTimeLimit(3600-180);
+        cplex_.remove(cb_fub_nu);
+        m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
         if (!cplex_.solve()) {
             env_->error() << "Failed to optimize master." << endl;
             throw (-1);

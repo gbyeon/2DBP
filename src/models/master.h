@@ -11,10 +11,11 @@
 #include "data.h"
 #include "callback.h"
 #include "lazyCBBenders.h"
+#include "lazyCBfUBnu.h"
 #include "lazyCBBendersMC.h"
 #include "heuristicCBIncumbentUpdate.h"
 #include "usercutCBfUB.h"
-#include "usercutCBfUBx.h"
+#include "usercutCBfUBnu.h"
 #include "usercutCBfUBhpp.h"
 #include "usercutCBBendersMC.h"
 #include "branchCB.h"
@@ -42,7 +43,7 @@ public:
     void createProblem (); 
 
     int solve();
-    void solveCallback(Follower &follower, FollowerMC &followerMC, FollowerX &followerx, LeaderFollower &leaderFollower, Data &data);
+    void solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower, Data &data);
 
     /* get functions */
     /* get environment */

@@ -29,6 +29,13 @@ class BendersLazyCallbackI : public IloCplex::LazyConstraintCallbackI {
 
     IloExpr &dy_;
 
+    IloNumArray barx_;
+    double * xVals_;
+
+    IloExpr termfP_;
+    IloExpr termLf_;
+    IloExpr indicatorTermx_;
+
     chrono::duration<double> ticToc_;
 
     double fcheck_, lfcheck_;
@@ -38,6 +45,9 @@ class BendersLazyCallbackI : public IloCplex::LazyConstraintCallbackI {
     double tVal_;
     double actual_tVal_;
 
+    int i;
+    int n_l;
+
 public:
     ILOCOMMONCALLBACKSTUFF(BendersLazyCallback);
 
@@ -46,6 +56,12 @@ public:
                         IloNumVarArray &xVars, IloNumVar &tVar, IloExpr &dy, LazyData &lazyData) : 
                         IloCplex::LazyConstraintCallbackI(env), follower_(follower), leaderFollower_(leaderFollower), xVars_(xVars), tVar_(tVar), dy_(dy), lazyData_(lazyData) {
                             tol_ = 1e-4;
+                            n_l = lazyData.n_l;
+                            barx_ = IloNumArray(env, n_l);
+                            xVals_ = new double [n_l];
+                            termfP_ = IloExpr(env);
+                            termLf_ = IloExpr(env);
+                            indicatorTermx_ = IloExpr(env);
                         };
     void main () override;
     int addBendersCuts();

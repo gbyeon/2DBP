@@ -20,6 +20,7 @@ Hpp::Hpp()
     cy_expr_ = IloExpr (*env_);
     dy_ = IloNumArray (*env_);
     dy_expr_ = IloExpr (*env_);
+    ax_expr_ = IloExpr (*env_);
 }
 
 /* copy constructor */
@@ -33,7 +34,8 @@ cx_(rhs.cx_),
 cy_(rhs.cy_),
 cy_expr_(rhs.cy_expr_),
 dy_(rhs.dy_),
-dy_expr_(rhs.dy_expr_)
+dy_expr_(rhs.dy_expr_),
+ax_expr_(rhs.ax_expr_)
 {
     /* nothing to do */
 }
@@ -46,6 +48,7 @@ Hpp::~Hpp()
     dy_expr_.end();
     cy_.end();
     cy_expr_.end();
+    ax_expr_.end();
 
     vars_.x.end();
     vars_.y.end();
@@ -55,6 +58,9 @@ Hpp::~Hpp()
     constrs_.yLBs.end();
     constrs_.yUBs.end();
     constrs_.xBds.end();
+
+    obj_.end();
+    obj_expr_.end();
 
     cplex_.end();
     m_.end();
@@ -104,9 +110,12 @@ void Hpp::loadProblem (Data &data) {
     lC_fV_ind_ = data.lC_fV_ind_;
     lC_lV_coef_ = data.lC_lV_coef_;
     lC_lV_ind_ = data.lC_lV_ind_;
+
+    obj_ = IloNumArray(*env_, n_l_);
+    obj_expr_ = IloExpr(*env_);
 }
 
-void Hpp::createProblem () {
+void Hpp::createProblem() {
 
     int i, j;
 
@@ -235,6 +244,23 @@ void Hpp::createProblem () {
 
 //    cplex_.exportModel("hpp.lp");
 
+    IloNumArray ax = IloNumArray(*env_, n_l_);
+    double ax_constant = 0;
+    for (int i = 0; i < n_l_; i++) 
+        ax[i] = 0;
+
+    for (int i = 0; i < m_f_; i++) {
+        for (int j = 0; j < fC_lV_cnt_[i]; j++) {
+            if (fC_lV_coef_[i][j] > 0) {
+                ax[fC_lV_ind_[i][j]] += fC_lV_coef_[i][j];
+            } else {
+                ax[fC_lV_ind_[i][j]] -= fabs(fC_lV_coef_[i][j]);
+                ax_constant += fabs(fC_lV_coef_[i][j]);
+            }
+        }
+    }
+    ax_expr_.setLinearCoefs(vars_.x, ax);
+    ax_expr_.setConstant(ax_constant);
 }
 
 void Hpp::updateUBProblem (IloNumArray &xUBs, IloNumArray &xLBs) {
@@ -258,7 +284,8 @@ int Hpp::solve() {
 
     if (!cplex_.solve()) {
         env_->error() << "Failed to optimize hpp." << endl;
-        throw (-1);
+        // throw (-1);
+        return 1;
     }
 
     status_ = cplex_.getStatus();
@@ -277,8 +304,8 @@ int Hpp::solve() {
     cplex_.getValues(xVals_, vars_.x);
     
     ticToc_ = (chrono::system_clock::now() - start_t);
-    cout << "Hpp obj: " << objVal_ << endl;
-    cout << "time in solving Hpp: " << ticToc_.count() << endl;
+    // cout << "Hpp obj: " << objVal_ << endl;
+    // cout << "time in solving Hpp: " << ticToc_.count() << endl;
 
     return 0;
 }
@@ -361,4 +388,142 @@ double Hpp::getDyVal(IloNumArray &yVals) {
     }
 
     return Dy;
+}
+
+bool Hpp::updateObjNu(double **nu1, double **nu4, IloNumArray &xlbs, IloNumArray &xubs, int &nnodes) {
+
+    if (nnodes > 0) 
+        vars_.x.setBounds(xlbs, xubs); 
+
+
+    cplex_.getObjective().setSense(IloObjective::Sense::Minimize);
+
+    dualUb_ = 100000;
+    
+    for (int i = 0; i < n_l_; i++) 
+        obj_[i] = 0;
+
+    for (int i = 0; i < m_f_; i++) {
+        for (int j = 0; j < fC_lV_cnt_[i]; j++) {
+            obj_[fC_lV_ind_[i][j]] += (nu1[i][j] - nu4[i][j]) * dualUb_;
+        }
+    }
+
+    obj_expr_.setLinearCoefs(vars_.x, obj_);
+    cplex_.getObjective().setExpr(obj_expr_);
+    
+    // double original_time_limit = timelimit_;
+    // setTimeLimit(100);
+    
+//    cplex_.exportModel("hppnu.lp");
+
+    // if (!cplex_.solve()) {
+    //     env_->error() << "Failed to optimize fLB." << endl;
+    //     return false;
+    // }
+
+    // status_ = cplex_.getStatus();
+    // if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
+
+    //     fLB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
+    //     cout << "f.LB: " << fLB_ << endl;
+
+    // } else {
+
+    //     cout << "Follower does not have finite LB" << endl;
+    //     return false;
+    // }
+
+    // setTimeLimit(original_time_limit);
+
+    return true;
+}
+
+bool Hpp::updateObjax(IloNumArray &xlbs, IloNumArray &xubs, IloNumArray &barx) {
+
+    vars_.x.setBounds(xlbs, xubs); 
+
+    cplex_.getObjective().setSense(IloObjective::Sense::Minimize);
+
+    cplex_.getObjective().setExpr(ax_expr_);
+    
+    double original_time_limit = timelimit_;
+    setTimeLimit(100);
+    
+//    cplex_.exportModel("hppnu.lp");
+
+    if (!cplex_.solve()) {
+        env_->error() << "Failed to optimize fLB." << endl;
+        return false;
+    }
+
+    cplex_.getValues(barx, vars_.x);
+
+    // status_ = cplex_.getStatus();
+    // if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
+
+    //     fLB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
+    //     cout << "f.LB: " << fLB_ << endl;
+
+    // } else {
+
+    //     cout << "Follower does not have finite LB" << endl;
+    //     return false;
+    // }
+
+    setTimeLimit(original_time_limit);
+
+    return true;
+}
+
+bool Hpp::updateObjaxpsi(IloNumArray &xlbs, IloNumArray &xubs, IloNumArray &barx, IloNumArray *psiVal) {
+
+    vars_.x.setBounds(xlbs, xubs); 
+
+    cplex_.getObjective().setSense(IloObjective::Sense::Minimize);
+
+    IloNumArray psiax = IloNumArray(*env_, n_l_);
+    IloExpr psiax_expr = IloExpr(*env_);
+    for (int i = 0; i < n_l_; i++) 
+        psiax[i] = 0;
+
+    for (int i = 0; i < m_f_; i++) {
+        for (int j = 0; j < fC_lV_cnt_[i]; j++) {
+            if (fC_lV_coef_[i][j] > 0) {
+                psiax[fC_lV_ind_[i][j]] += fC_lV_coef_[i][j] * (*psiVal)[i];
+            } else {
+                psiax[fC_lV_ind_[i][j]] -= fabs(fC_lV_coef_[i][j]) * (*psiVal)[i];
+            }
+        }
+    }
+    psiax_expr.setLinearCoefs(vars_.x, psiax);
+    cplex_.getObjective().setExpr(psiax_expr);
+    
+    double original_time_limit = timelimit_;
+    setTimeLimit(100);
+    
+//    cplex_.exportModel("hppnu.lp");
+
+    if (!cplex_.solve()) {
+        env_->error() << "Failed to optimize fLB." << endl;
+        return false;
+    }
+
+    cplex_.getValues(barx, vars_.x);
+
+    // status_ = cplex_.getStatus();
+    // if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
+
+    //     fLB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
+    //     cout << "f.LB: " << fLB_ << endl;
+
+    // } else {
+
+    //     cout << "Follower does not have finite LB" << endl;
+    //     return false;
+    // }
+
+    setTimeLimit(original_time_limit);
+
+    return true;
 }
