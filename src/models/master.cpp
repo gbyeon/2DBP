@@ -317,9 +317,15 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
     hpp.loadProblem(data);
     hpp.createProblem();
 
+    Hpp hpp_lp;
+    hpp_lp.loadProblem(data);
+    hpp_lp.createProblem(true);
+
     /* calculate upper bound of follower obj val */
     if (hpp.solvefUb())
         follower.setfUb(hpp.getfUb());
+    // if (hpp_lp.solvefUb())
+        // follower.setfUb(hpp_lp.getfUb());
     /* else follower.setfUb(100000); or throw error */
     if (hpp.solvefLb())
     {
@@ -351,7 +357,11 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         /* usercutCBfUB.h */
         //  cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
         /* usercutCBfUBnu.h */
-        UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
+        // cout << "use hpp with integrality conditions";
+        // UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
+        // relaxed hpp
+        cout << "use relaxed hpp";
+        UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp_lp, data);
         cplex_.use(cb_fub_nu);
         // cplex_.use(UserCallbackfUBNu(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data));
         /* usercutCBfUBhpp.h */
@@ -363,9 +373,11 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         /* nodeCBfObj.h */
         bool node_type = false;
         IloInt64 node_id = -1;
-        // cplex_.use(nodeSelectCallbackfObj(*env_, &node_type, &node_id));
+        nodeSelectCallbackfObjI * cb_node_select = new nodeSelectCallbackfObjI(*env_, &node_type, &node_id);
+        cplex_.use(cb_node_select);
         /* branchCBfObj.h */
-        // cplex_.use(branchCallbackfObj(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id));
+        branchCallbackfObjI * cb_branch = new branchCallbackfObjI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id);
+        cplex_.use(cb_branch);
 
         if (!cplex_.solve()) {
             env_->error() << "Failed to optimize master." << endl;
@@ -373,9 +385,14 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         }
 
         /* resolve without heuristic */
+        num_local_cuts_added_ = cb_fub_nu->getNumLocalCutsAdded();
+        num_user_branches_ = cb_node_select->getNumUserBranches();
         setTimeLimit(3600-180);
         cplex_.remove(cb_fub_nu);
-        m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
+        cplex_.remove(cb_node_select);
+        cplex_.remove(cb_branch);
+        if (num_local_cuts_added_ > 0)
+            m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
         if (!cplex_.solve()) {
             env_->error() << "Failed to optimize master." << endl;
             throw (-1);

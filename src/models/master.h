@@ -54,6 +54,8 @@ public:
     double getBestObjVal() {return bestObjVal_;};
     /* get optimality gap */
     double getGap() {return gap_;};
+    double getNumLocalCutsAdded() {return num_local_cuts_added_;};
+    double getNumUserBranches() {return num_user_branches_;};
     /* get current x solution */
     IloNumArray getxVals() {return xVals_;};
     /* get time duration */
@@ -179,9 +181,12 @@ private:
     IloNumArray cy_;
     IloExpr cy_expr_;
 
+    /* record */
     double objVal_;
     double bestObjVal_;
     double gap_;
+    int num_local_cuts_added_;
+    int num_user_branches_;
 
     chrono::duration<double> ticToc_;
     double timelimit_;

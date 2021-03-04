@@ -22,29 +22,36 @@ void UserCallbackfUBNuI::main(){
     /* set objective function: minimized ax */
     // hpp_.updateObjax(lazyData_.xLBs_ilo, lazyData_.xUBs_ilo, barx_);
     getValues(barx_, xVars_);
-    double previous = 1e+100;
-    double current;
-    int iter = 0;
+    previous_fobj_ = 1e+100;
+    iter_ = 0;
     while (1) {
         
         for (i = 0; i < n_l; i++) {
             xVals_[i] = barx_[i];
         }
 
-        follower_.updateProblem (xVals_);
+        follower_.updateProblem(xVals_);
         follower_.solve(); 
 
-        current = follower_.getObjVal();
-        // cout << iter << ": " << current << endl;
+        current_fobj_ = follower_.getObjVal();
+        // cout << iter_ << ": " << current_fobj_ << endl;
 
-        if (fabs(current - previous) < 0.01)
-            break;
+        // if (fabs(current_fobj_ - previous_fobj_) < 0.01)
+        //     break;
 
         hpp_.updateObjaxpsi(lazyData_.xLBs_ilo, lazyData_.xUBs_ilo, barx_, follower_.getpsiValsPtr());
 
-        previous = current;
-        iter++;
+        bool is_updated = false;
+        for (i = 0; i < n_l; i++) {
+            if (fabs(xVals_[i] - barx_[i]) > 1e-5){
+                is_updated = true;
+                break;
+            }
+        }
+        if (!is_updated) break;
 
+        previous_fobj_ = current_fobj_;
+        iter_++;
     }
 
     // getValues(barx_, xVars_);
@@ -97,16 +104,17 @@ void UserCallbackfUBNuI::main(){
 //         if (follower_.getStatus() == IloAlgorithm::Status::Optimal) {
 
             getValues(lazyData_.bary, yVars_);
-            double Dy = follower_.getDyVal(lazyData_.bary);
+            dyhat_ = follower_.getDyVal(lazyData_.bary);
 
 //             fUB += follower_.getObjVal() - hpp_.getObjVal();
 //             // cout << "dy: " << Dy << ", fobj: " << follower_.getObjVal() << " hpp obj: " << hpp_.getObjVal() << ", fUB: " << fUB << endl;
             
             
             // if (Dy > fUB){
-                if (Dy > current){
-                                    // cout << "follower obj: " << follower_.getObjVal() <<", Dy: " << Dy << endl;
-                addLocal(dy_ <= current);
+                if (dyhat_ > current_fobj_){
+                    num_local_cuts_added_++;
+                    cout << "fub approx: " << current_fobj_ << ", dyhat: " << dyhat_ << endl;
+                addLocal(dy_ <= current_fobj_);
 //                 cout << "usercut: fUB: " << fUB <<", Dy: " << Dy << endl;
                 // addLocal(dy_ <= fUB);
             }

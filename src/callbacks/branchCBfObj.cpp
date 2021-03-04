@@ -30,13 +30,14 @@ void branchCallbackfObjI::main() {
 
                 if (fObjVal_ystar + 1e-8 <= fObjVal_ytilde) 
                 {
-                    // cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << endl;
+                    double branching_dy_val = floor(fObjVal_ystar * 1 / 4 + fObjVal_ytilde * 3 / 4); //floor(fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs 
+                    cout << "ystar: " << fObjVal_ystar << ", ytilde: " << fObjVal_ytilde << ", branching: " << branching_dy_val << endl;
 
-                    IloConstraint con_down = dy_ <= floor(fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
-                    IloConstraint con_up = dy_ >= floor(fObjVal_ystar + fObjVal_ytilde) / 2; 
+                    IloConstraint con_down = dy_ <= branching_dy_val; //floor(fObjVal_ystar + fObjVal_ytilde) / 2; /* (fObjVal_ystar + fObjVal_ytilde) / 2 vs fObjVal_ystar */
+                    IloConstraint con_up = dy_ >= branching_dy_val;
 
-                    UserNodeData *node_down = new UserNodeData(-100000, floor(fObjVal_ystar + fObjVal_ytilde) / 2, -1*(*node_id));
-                    UserNodeData *node_up = new UserNodeData(floor(fObjVal_ystar + fObjVal_ytilde) / 2, 100000, *node_id);      
+                    UserNodeData *node_down = new UserNodeData(-100000, branching_dy_val, -1*(*node_id));
+                    UserNodeData *node_up = new UserNodeData(branching_dy_val, 100000, *node_id);      
                     // cout << "node_id at branchCB: " << *node_id << endl;          
                     makeBranch(con_down, current_master_objVal, node_down);
                     makeBranch(con_up, current_master_objVal, node_up);

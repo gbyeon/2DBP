@@ -115,7 +115,7 @@ void Hpp::loadProblem (Data &data) {
     obj_expr_ = IloExpr(*env_);
 }
 
-void Hpp::createProblem() {
+void Hpp::createProblem(bool relaxed) {
 
     int i, j;
 
@@ -124,7 +124,11 @@ void Hpp::createProblem() {
     auto start_t = chrono::system_clock::now();
 #endif
 
-    addxVars();
+    if (!relaxed) {
+        addxVars();
+    } else {
+        addxVars(true);
+    }
     addyVars();
 
 #ifdef HPP_BUILD_DEBUG

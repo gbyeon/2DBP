@@ -17,7 +17,7 @@ void nodeSelectCallbackfObjI::main() {
 
       if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000))
       {
-         
+         num_user_branches_++;
          #ifdef DEBUG 
          cout << "number of remaining nodes: " << remainingNodes << endl;
          #endif

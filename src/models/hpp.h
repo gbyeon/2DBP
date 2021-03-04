@@ -27,13 +27,13 @@ public:
     void loadProblem (Data &data);
 
     /* create hpp problem */
-    void createProblem (); 
+    void createProblem (bool relaxed=false); 
 
     int solve();
 
     /* get functions */
     /* get environment */
-    IloEnv * getEnvPtr() {return env_;}
+    IloEnv * getEnvPtr() {return env_;};
     /* get current objective value */
     double getObjVal() {return objVal_;};
     /* get time duration */

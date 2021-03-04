@@ -37,6 +37,14 @@ class UserCallbackfUBNuI : public IloCplex::UserCutCallbackI {
     /* dual ub */
     double dualUb_;
 
+    /* misc */
+    double previous_fobj_, current_fobj_;
+    int iter_;
+    double dyhat_;
+
+    /* record */
+    int num_local_cuts_added_;
+
   ControlCallbackI::IntegerFeasibilityArray stat;
     
 public:
@@ -66,7 +74,10 @@ public:
           nu4_[i] = new double[fC_lV_cnt_[i]]; 
         }
       }
+      /* record */
+      num_local_cuts_added_ = 0;
     };
+  double getNumLocalCutsAdded() {return num_local_cuts_added_;};
   void main() override;
 };
 IloCplex::Callback UserCallbackfUBNu(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,

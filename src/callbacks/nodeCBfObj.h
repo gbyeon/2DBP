@@ -20,9 +20,11 @@ public:
       num_selected_nodes = 0;
       count = 0;
       current_best_objVal = -INFINITY;
+      num_user_branches_ = 0;
   };
   
   void main() override;
+  double getNumUserBranches() {return num_user_branches_;};
   
   IloInt i;
   int count;
@@ -32,6 +34,9 @@ public:
   int num_selected_nodes;
   bool *node_type; /* true: node with dy <= fObj is selected */
   IloInt64 *node_id;
+
+  /* record */
+  int num_user_branches_;
 };
 IloCplex::Callback nodeSelectCallbackfObj(IloEnv env, bool* nodeType, IloInt64 *nodeId);
 

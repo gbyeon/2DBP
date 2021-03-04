@@ -13,13 +13,19 @@
  * ################################################## */
 
 /* add leader variables */
-#define addxVars() {    \
+#define addxVars(...) {    \
     int i;  \
+    bool is_relaxed = false;  \
+    __VA_OPT__(is_relaxed = __VA_ARGS__;)    \
+    __VA_OPT__(cout << is_relaxed << endl;)    \
     for (i = 0; i < (this)->n_l_; i++) {    \
         char cname[80]; \
         sprintf(cname, "x_%d", i); \
         if ((this)->is_integer_[i]) \
-            (this)->vars_.x.add(IloNumVar(*((this)->env_), 0, 1, ILOBOOL, cname));  \
+            if (!is_relaxed)   \
+                (this)->vars_.x.add(IloNumVar(*((this)->env_), 0, 1, ILOBOOL, cname));  \
+            else    \
+                (this)->vars_.x.add(IloNumVar(*((this)->env_), 0, 1, ILOFLOAT, cname));  \
         else {  \
             /* if it's continuous, the original indices are researved */    \
             (this)->vars_.x.add(IloNumVar(*((this)->env_), (this)->xlb_[i], (this)->xub_[i], ILOFLOAT, cname));    \

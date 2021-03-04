@@ -93,9 +93,11 @@ int main (int argc, char *argv[]) {
     
     /* get results */
     cout << "objVal: " << master.getObjVal() << endl;
+    cout << "num local cuts added: " << master.getNumLocalCutsAdded() << endl;
+    cout << "num user branches: " << master.getNumUserBranches() << endl;
     ofstream bendersResultFile;
     bendersResultFile.open ("Benders_result.csv", ios::out | ios::app);
-    bendersResultFile << data.problemName_ << " ," << master.getObjVal() << ", " << master.getBestObjVal() << ", " << master.getGap() * 100 << ", " << master.getTicToc().count()
+    bendersResultFile << data.problemName_ << " ," << master.getObjVal() << ", " << master.getBestObjVal() << ", " << master.getGap() * 100 << ", " << master.getTicToc().count() << ", " << master.getNumLocalCutsAdded() << ", " << master.getNumUserBranches()
                   << endl;
     bendersResultFile.close();
 
