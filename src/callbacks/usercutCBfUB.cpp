@@ -1,11 +1,11 @@
 #include "usercutCBfUB.h"
 // #define CALLBACK_DEBUG
-IloCplex::Callback BendersUserCallback(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
+IloCplex::Callback UserCallbackfUB(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy,
                         LazyData &lazyData, Follower &follower){
-  return (IloCplex::Callback(new (env) BendersUserCallbackI(env, xVars, yVars, dy, lazyData, follower)));
+  return (IloCplex::Callback(new (env) UserCallbackfUBI(env, xVars, yVars, dy, lazyData, follower)));
 }
-void BendersUserCallbackI::main(){
+void UserCallbackfUBI::main(){
 
     // Skip the separation if not at the end of the cut loop
     if (!isAfterCutLoop())
@@ -48,6 +48,7 @@ void BendersUserCallbackI::main(){
    cout << "time in updating fUB: " << ticToc_.count() << endl;
    start_t = chrono::system_clock::now();
 #endif
+
     follower_.solve(); 
 
 #ifdef CALLBACK_DEBUG

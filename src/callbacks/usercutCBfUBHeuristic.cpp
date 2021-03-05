@@ -1,12 +1,12 @@
-#include "usercutCBfUBnu.h"
+#include "usercutCBfUBHeuristic.h"
 // #define CALLBACK_DEBUG
 
-IloCplex::Callback UserCallbackfUBNu(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
+IloCplex::Callback UserCallbackfUBHeuristic(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy,
                         LazyData &lazyData, Follower &follower, Hpp &hpp, Data &data){
-  return (IloCplex::Callback(new (env) UserCallbackfUBNuI(env, xVars, yVars, dy, lazyData, follower, hpp, data)));
+  return (IloCplex::Callback(new (env) UserCallbackfUBHeuristicI(env, xVars, yVars, dy, lazyData, follower, hpp, data)));
 }
-void UserCallbackfUBNuI::main(){
+void UserCallbackfUBHeuristicI::main(){
 
     // Skip the separation if not at the end of the cut loop
     if (!isAfterCutLoop())

@@ -330,11 +330,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
     if (hpp.solvefLb())
     {
         follower.setLB(floor(hpp.getfLb()));
-        // leaderFollower.setfLB(floor(hpp.getfLb()));
-        // follower.updatefObjLb(floor(hpp.getfLb()));
-        // leaderFollower.updatefObjLb(floor(hpp.getfLb()));
     }
-    // constrs_.fObj.setLB(-hpp.getfUb());
 
     double blb = 0;
     double bub = 0;
@@ -344,26 +340,21 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
     try {
         // heuristic timelimit
         setTimeLimit(180);
-        // cplex_.use(LazyCallbackfUBNu(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data));
         /* lazyCBBenders.h */
-        cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
-        // cplex_.use(BendersLazyCallback(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        BendersLazyCallbackI * cb_benders = new BendersLazyCallbackI(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_);
         /* lazyCBBendersMC.h */
         // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
         /* heuristicCBIncumbentUpdate.h */
-        cplex_.use(incumbentUpdateCallback(*env_, vars_.x, lazyData_));
+        incumbentUpdateCallbackI * cb_incumbent_update = new incumbentUpdateCallbackI(*env_, vars_.x, lazyData_);
         /* usercutCBBendersMC.h */
         // cplex_.use(BendersUserCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
         /* usercutCBfUB.h */
-        //  cplex_.use(BendersUserCallback(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower));
-        /* usercutCBfUBnu.h */
+        UserCallbackfUBI * cb_fub = new UserCallbackfUBI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower);
+        /* usercutCBfUBHeuristic.h */
         // cout << "use hpp with integrality conditions";
-        // UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
-        // relaxed hpp
+        // UserCallbackfUBHeuristicI * cb_fub_nu = new UserCallbackfUBHeuristicI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
         cout << "use relaxed hpp";
-        UserCallbackfUBNuI * cb_fub_nu = new UserCallbackfUBNuI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp_lp, data);
-        cplex_.use(cb_fub_nu);
-        // cplex_.use(UserCallbackfUBNu(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data));
+        UserCallbackfUBHeuristicI * cb_fub_heuristic = new UserCallbackfUBHeuristicI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp_lp, data);
         /* usercutCBfUBhpp.h */
         // cplex_.use(BendersUserCallbackHpp(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, hpp));
         /* branchCB.h */
@@ -374,9 +365,14 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         bool node_type = false;
         IloInt64 node_id = -1;
         nodeSelectCallbackfObjI * cb_node_select = new nodeSelectCallbackfObjI(*env_, &node_type, &node_id);
-        cplex_.use(cb_node_select);
         /* branchCBfObj.h */
         branchCallbackfObjI * cb_branch = new branchCallbackfObjI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id);
+        
+        /* callbacks to use */
+        cplex_.use(cb_benders);
+        cplex_.use(cb_incumbent_update);
+        cplex_.use(cb_fub_heuristic);
+        cplex_.use(cb_node_select);
         cplex_.use(cb_branch);
 
         if (!cplex_.solve()) {
@@ -384,11 +380,20 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
             throw (-1);
         }
 
-        /* resolve without heuristic */
-        num_local_cuts_added_ = cb_fub_nu->getNumLocalCutsAdded();
+        /* record heuristic statistics */
+        fub_gap_ = cplex_.getMIPRelativeGap();
+        num_local_cuts_added_ = cb_fub_heuristic->getNumLocalCutsAdded();
         num_user_branches_ = cb_node_select->getNumUserBranches();
-        setTimeLimit(3600-180);
-        cplex_.remove(cb_fub_nu);
+        ticToc_ = chrono::system_clock::now() - start_t;
+        fub_time_ = ticToc_.count();
+
+        cout << "fub_gap_:" << fub_gap_ << ", num_local_cuts_added: " << num_local_cuts_added_ << ", num_user_branches: " << num_user_branches_ << 
+        ", fub_time_: " << fub_time_ << endl;
+        
+        /* resolve without heuristic */
+        setTimeLimit(3600-fub_time_);
+        cplex_.remove(cb_fub_heuristic);
+        // cplex_.use(cb_fub);
         cplex_.remove(cb_node_select);
         cplex_.remove(cb_branch);
         if (num_local_cuts_added_ > 0)
@@ -408,6 +413,13 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         gap_ = cplex_.getMIPRelativeGap();
 
         ticToc_ = chrono::system_clock::now() - start_t;
+
+        delete cb_benders;
+        delete cb_fub;
+        delete cb_fub_heuristic;
+        delete cb_node_select;
+        delete cb_branch;
+
     } catch (IloException &e) {
         cerr << "CPLEX found the following exception: " << e << " in master.cpp" << endl;
         e.end();

@@ -5,8 +5,7 @@ set(SRC
     callbacks/lazyCBBendersMC.cpp
     callbacks/heuristicCBIncumbentUpdate.cpp
     callbacks/usercutCBfUB.cpp
-    callbacks/usercutCBfUBnu.cpp
-    callbacks/usercutCBfUBhpp.cpp
+    callbacks/usercutCBfUBHeuristic.cpp
     callbacks/usercutCBBendersMC.cpp
     callbacks/branchCB.cpp
     callbacks/branchCBfObj.cpp

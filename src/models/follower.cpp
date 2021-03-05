@@ -221,12 +221,12 @@ cout << "solve follower UB: ";
 
     int i, j;
 
-    for (i=0; i < n_l_; i++) {
-        if (xUBs[i] > 1)
-            xUBs[i] = 1;
-        if (xLBs[i] < 0)
-            xLBs[i] = 0;
-    }
+    // for (i=0; i < n_l_; i++) {
+    //     if (xUBs[i] > 1)
+    //         xUBs[i] = 1;
+    //     if (xLBs[i] < 0)
+    //         xLBs[i] = 0;
+    // }
 
     for (i = 0; i < m_f_; i++) {
 

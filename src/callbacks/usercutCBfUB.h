@@ -11,7 +11,7 @@
 #include "callback.h"
 #include "follower.h"
 
-class BendersUserCallbackI : public IloCplex::UserCutCallbackI {
+class UserCallbackfUBI : public IloCplex::UserCutCallbackI {
     IloNumVarArray& xVars_;
     IloNumVarArray& yVars_;
     LazyData &lazyData_;
@@ -20,12 +20,12 @@ class BendersUserCallbackI : public IloCplex::UserCutCallbackI {
     chrono::duration<double> ticToc_;
     
 public:
-  ILOCOMMONCALLBACKSTUFF(BendersUserCallback);
-  BendersUserCallbackI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower)
+  ILOCOMMONCALLBACKSTUFF(UserCallbackfUB);
+  UserCallbackfUBI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower)
     : IloCplex::UserCutCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), follower_(follower) {};
   void main() override;
 };
-IloCplex::Callback BendersUserCallback(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
+IloCplex::Callback UserCallbackfUB(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy, 
                         LazyData &lazyData, Follower &follower);
 

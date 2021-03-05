@@ -14,7 +14,6 @@
 class branchCallbackfObjI : public IloCplex::BranchCallbackI {
     IloNumVarArray& xVars_;
     IloNumVarArray& yVars_;
-    LazyData &lazyData_;
     Follower &follower_;
     IloExpr &dy_;
     chrono::duration<double> ticToc_;
@@ -34,7 +33,7 @@ class branchCallbackfObjI : public IloCplex::BranchCallbackI {
 public:
     ILOCOMMONCALLBACKSTUFF(branchCallbackfObj);
 
-    branchCallbackfObjI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower, bool *nodeType, IloInt64 *nodeId) : IloCplex::BranchCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), follower_(follower), node_type(nodeType), node_id(nodeId) 
+    branchCallbackfObjI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower, bool *nodeType, IloInt64 *nodeId) : IloCplex::BranchCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), follower_(follower), node_type(nodeType), node_id(nodeId) 
     {
         n_l = lazyData.n_l;
         n_f = lazyData.n_f;

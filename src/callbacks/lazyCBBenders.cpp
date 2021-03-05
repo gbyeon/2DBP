@@ -102,28 +102,28 @@ void BendersLazyCallbackI::main(){
 
                 if (follower_.getbigM() > FUB) {
 
-                    if (FUB >= follower_.getObjVal()) 
-                    {
+                    // if (FUB >= follower_.getObjVal()) 
+                    // {
                         /* do not add cuts when it happens */   
-                    } 
-                    else 
-                    {
+                    // } 
+                    // else 
+                    // {
                         addLocal(dy_ - FUB <= 0);
-                    }
+                    // }
 
-                    if (cut_type_ == 1) {
-                        if (tVal_ + tol_ <= actual_tVal_) {
-                            addLocal(tVar_ >= termLf_ - wVal_ 
-                                    * (fobjval_ + (FUB - fobjval_) * indicatorTermx_));
-                        }
-                    } else if (cut_type_ == 3) {
-                        if (actual_tVal_ >= tol_) {
-                            addLocal(termLf_ - wVal_ 
-                                    * (fobjval_ + (FUB - fobjval_) * indicatorTermx_) <= 0);
-                        }
-                    } else {
-                        cout << "Incorrect cut type" << endl;
-                    }
+                    // if (cut_type_ == 1) {
+                    //     if (tVal_ + tol_ <= actual_tVal_) {
+                    //         addLocal(tVar_ >= termLf_ - wVal_ 
+                    //                 * (fobjval_ + (FUB - fobjval_) * indicatorTermx_));
+                    //     }
+                    // } else if (cut_type_ == 3) {
+                    //     if (actual_tVal_ >= tol_) {
+                    //         addLocal(termLf_ - wVal_ 
+                    //                 * (fobjval_ + (FUB - fobjval_) * indicatorTermx_) <= 0);
+                    //     }
+                    // } else {
+                    //     cout << "Incorrect cut type" << endl;
+                    // }
                 }
             }
         }

@@ -1,18 +1,18 @@
 /*
- * usercutCBfUBnu.h
+ * usercutCBfUBHeuristic.h
  *
  *  Created on: March 2, 2021
  *      Author: geunyeongbyeon
  */
 
-#ifndef BILEVEL_USERCUTCBFUBNU_H
-#define BILEVEL_USERCUTCBFUBNU_H
+#ifndef BILEVEL_USERCUTCBFUBHEURISTIC_H
+#define BILEVEL_USERCUTCBFUBHEURISTIC_H
 
 #include "callback.h"
 #include "follower.h"
 #include "hpp.h"
 
-class UserCallbackfUBNuI : public IloCplex::UserCutCallbackI {
+class UserCallbackfUBHeuristicI : public IloCplex::UserCutCallbackI {
     IloNumVarArray& xVars_;
     IloNumVarArray& yVars_;
     LazyData &lazyData_;
@@ -48,8 +48,8 @@ class UserCallbackfUBNuI : public IloCplex::UserCutCallbackI {
   ControlCallbackI::IntegerFeasibilityArray stat;
     
 public:
-  ILOCOMMONCALLBACKSTUFF(UserCallbackfUBNu); 
-  UserCallbackfUBNuI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower, Hpp &hpp, Data &data)
+  ILOCOMMONCALLBACKSTUFF(UserCallbackfUBHeuristic); 
+  UserCallbackfUBHeuristicI(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars, IloExpr &dy, LazyData &lazyData, Follower &follower, Hpp &hpp, Data &data)
     : IloCplex::UserCutCallbackI(env), xVars_(xVars), yVars_(yVars), dy_(dy), lazyData_(lazyData), follower_(follower), hpp_(hpp), data_(data) {
       
       n_l = data.n_l_;
@@ -80,8 +80,8 @@ public:
   double getNumLocalCutsAdded() {return num_local_cuts_added_;};
   void main() override;
 };
-IloCplex::Callback UserCallbackfUBNu(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
+IloCplex::Callback UserCallbackfUBHeuristic(IloEnv env, IloNumVarArray& xVars, IloNumVarArray& yVars,
                         IloExpr &dy, 
                         LazyData &lazyData, Follower &follower, Hpp &hpp, Data &data);
 
-#endif //BILEVEL_USERCUTCBFUBNU_H
+#endif //BILEVEL_USERCUTCBFUBHEURISTIC_H

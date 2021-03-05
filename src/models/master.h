@@ -15,8 +15,7 @@
 #include "lazyCBBendersMC.h"
 #include "heuristicCBIncumbentUpdate.h"
 #include "usercutCBfUB.h"
-#include "usercutCBfUBnu.h"
-#include "usercutCBfUBhpp.h"
+#include "usercutCBfUBHeuristic.h"
 #include "usercutCBBendersMC.h"
 #include "branchCB.h"
 #include "branchCBfObj.h"
@@ -54,8 +53,10 @@ public:
     double getBestObjVal() {return bestObjVal_;};
     /* get optimality gap */
     double getGap() {return gap_;};
-    double getNumLocalCutsAdded() {return num_local_cuts_added_;};
-    double getNumUserBranches() {return num_user_branches_;};
+    int getNumLocalCutsAdded() {return num_local_cuts_added_;};
+    int getNumUserBranches() {return num_user_branches_;};
+    double getFUbGap() {return fub_gap_;};
+    double getFUbTime() {return fub_time_;};
     /* get current x solution */
     IloNumArray getxVals() {return xVals_;};
     /* get time duration */
@@ -187,6 +188,8 @@ private:
     double gap_;
     int num_local_cuts_added_;
     int num_user_branches_;
+    double fub_gap_;
+    double fub_time_;
 
     chrono::duration<double> ticToc_;
     double timelimit_;
