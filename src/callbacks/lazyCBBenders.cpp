@@ -24,6 +24,7 @@ void BendersLazyCallbackI::main(){
         }
 
 #ifdef CALLBACK_DEBUG
+   cout << "current_master_objVal: " << lazyData_.current_master_objVal << endl;
    ticToc_ = (chrono::system_clock::now() - start_t);
    cout << "time in getting master Result: " << ticToc_.count() << endl;
    start_t = chrono::system_clock::now();

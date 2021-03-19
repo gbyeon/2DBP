@@ -36,7 +36,7 @@ void branchCallbackfObjI::main() {
                     #endif
 
                     IloConstraint con_down = dy_ <= branching_dy_val;
-                    IloConstraint con_up = dy_ >= branching_dy_val;
+                    IloConstraint con_up = dy_ >= branching_dy_val + 1e-6;
 
                     UserNodeData *node_down = new UserNodeData(-100000, branching_dy_val, -1*(*node_id));
                     UserNodeData *node_up = new UserNodeData(branching_dy_val, 100000, *node_id);      
@@ -47,6 +47,7 @@ void branchCallbackfObjI::main() {
                     makeBranch(con_up, current_master_objVal, node_up);
                 } 
             }
+            *node_type = false;
         }
     } catch (IloException &e) {
         cerr << "CPLEX found the following exception: " << e << " in branchCBfObj.cpp" << endl;

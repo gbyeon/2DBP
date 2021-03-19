@@ -113,7 +113,7 @@ void UserCallbackfUBHeuristicI::main(){
             // if (Dy > fUB){
                 if (dyhat_ > current_fobj_){
                     num_local_cuts_added_++;
-                    cout << "fub approx: " << current_fobj_ << ", dyhat: " << dyhat_ << endl;
+                    // cout << "fub approx: " << current_fobj_ << ", dyhat: " << dyhat_ << endl;
                 addLocal(dy_ <= current_fobj_);
 //                 cout << "usercut: fUB: " << fUB <<", Dy: " << Dy << endl;
                 // addLocal(dy_ <= fUB);
