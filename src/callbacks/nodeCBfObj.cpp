@@ -15,7 +15,8 @@ void nodeSelectCallbackfObjI::main() {
       IloInt remainingNodes = getNremainingNodes();
       IloInt nNodes = getNnodes();
 
-      if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000))
+      // if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000))
+      if (count >= 5)
       {
          num_user_branches_++;
          #ifdef DEBUG 

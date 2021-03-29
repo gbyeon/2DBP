@@ -335,10 +335,10 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         throw(-1);
     }
 
-    if (hpp.solvefLb())
-    {
-        follower.setLB(floor(hpp.getfLb()));
-    }
+    // if (hpp.solvefLb())
+    // {
+    //     follower.setLB(floor(hpp.getfLb()));
+    // }
 
     double blb = 0;
     double bub = 0;
