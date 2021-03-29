@@ -306,6 +306,9 @@ int Master::solve() {
 
 void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower, Data &data){
     
+    use_heuristic_cb_ = true;
+    heuristic_time_limit_ = 300;
+
     auto start_t = chrono::system_clock::now();
     
     /* create hpp problem:
@@ -318,15 +321,20 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
     hpp.createProblem();
 
     Hpp hpp_lp;
-    hpp_lp.loadProblem(data);
-    hpp_lp.createProblem(true);
-
+    if (use_heuristic_cb_)
+    {
+        hpp_lp.loadProblem(data);
+        hpp_lp.createProblem(true);
+    }
+    
     /* calculate upper bound of follower obj val */
     if (hpp.solvefUb())
         follower.setfUb(hpp.getfUb());
-    // if (hpp_lp.solvefUb())
-        // follower.setfUb(hpp_lp.getfUb());
-    /* else follower.setfUb(100000); or throw error */
+    else {
+        env_->error() << "failed to find fUB." << endl;
+        throw(-1);
+    }
+
     if (hpp.solvefLb())
     {
         follower.setLB(floor(hpp.getfLb()));
@@ -338,8 +346,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
     lazyData_ = LazyData (n_l_, n_f_, *env_);
 
     try {
-        // heuristic timelimit
-        setTimeLimit(180);
+        
         /* lazyCBBenders.h */
         BendersLazyCallbackI * cb_benders = new BendersLazyCallbackI(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_);
         /* lazyCBBendersMC.h */
@@ -371,33 +378,41 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         /* callbacks to use */
         cplex_.use(cb_benders);
         cplex_.use(cb_incumbent_update);
-        cplex_.use(cb_fub_heuristic);
-        cplex_.use(cb_node_select);
-        cplex_.use(cb_branch);
+        if (use_heuristic_cb_)
+        {
+            cplex_.use(cb_fub_heuristic);
+            cplex_.use(cb_node_select);
+            cplex_.use(cb_branch);
+        
+            // heuristic timelimit
+            setTimeLimit(heuristic_time_limit_);
+            if (!cplex_.solve()) {
+                env_->error() << "Failed to optimize master." << endl;
+                throw (-1);
+            }
 
-        if (!cplex_.solve()) {
-            env_->error() << "Failed to optimize master." << endl;
-            throw (-1);
+            /* record heuristic statistics */
+            fub_gap_ = cplex_.getMIPRelativeGap();
+            num_local_cuts_added_ = cb_fub_heuristic->getNumLocalCutsAdded();
+            num_user_branches_ = cb_node_select->getNumUserBranches();
+
+            cout << "fub_gap_:" << fub_gap_ << ", num_local_cuts_added: " << num_local_cuts_added_ << ", num_user_branches: " << num_user_branches_ << endl;
+
+            /* resolve without heuristic */
+            cplex_.remove(cb_fub_heuristic);
+            cplex_.remove(cb_node_select);
+            cplex_.remove(cb_branch);
+            if (num_local_cuts_added_ > 0)
+                m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
+        } else {
+            num_local_cuts_added_ = 0;
+            num_user_branches_ = 0;
         }
 
-        /* record heuristic statistics */
-        fub_gap_ = cplex_.getMIPRelativeGap();
-        num_local_cuts_added_ = cb_fub_heuristic->getNumLocalCutsAdded();
-        num_user_branches_ = cb_node_select->getNumUserBranches();
         ticToc_ = chrono::system_clock::now() - start_t;
-        fub_time_ = ticToc_.count();
-
-        cout << "fub_gap_:" << fub_gap_ << ", num_local_cuts_added: " << num_local_cuts_added_ << ", num_user_branches: " << num_user_branches_ << 
-        ", fub_time_: " << fub_time_ << endl;
+        elapsed_time_ = ticToc_.count();
+        setTimeLimit(3600 - elapsed_time_);
         
-        /* resolve without heuristic */
-        setTimeLimit(3600-fub_time_);
-        cplex_.remove(cb_fub_heuristic);
-        // cplex_.use(cb_fub);
-        cplex_.remove(cb_node_select);
-        cplex_.remove(cb_branch);
-        if (num_local_cuts_added_ > 0)
-            m_.add(IloRange(*env_, 0, vars_.t - cy_expr_, IloInfinity));
         if (!cplex_.solve()) {
             env_->error() << "Failed to optimize master." << endl;
             throw (-1);
@@ -405,8 +420,10 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
 
         if (cplex_.getStatus() == IloAlgorithm::Status::Unbounded)
             objVal_ = -3e+6;
-        else
-            objVal_ = cplex_.getObjValue();
+        else {
+            // objVal_ = cplex_.getObjValue();
+            objVal_ = lazyData_.current_best_ub;
+        }
         bestObjVal_ = cplex_.getBestObjValue();
         cplex_.getValues(xVals_, vars_.x);
         tVal_ = cplex_.getValue(vars_.t);
@@ -415,6 +432,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         ticToc_ = chrono::system_clock::now() - start_t;
 
         delete cb_benders;
+        delete cb_incumbent_update;
         delete cb_fub;
         delete cb_fub_heuristic;
         delete cb_node_select;

@@ -493,11 +493,11 @@ bool Hpp::updateObjaxpsi(IloNumArray &xlbs, IloNumArray &xubs, IloNumArray &barx
 
     for (int i = 0; i < m_f_; i++) {
         for (int j = 0; j < fC_lV_cnt_[i]; j++) {
-            if (fC_lV_coef_[i][j] > 0) {
+            // if (fC_lV_coef_[i][j] > 0) {
                 psiax[fC_lV_ind_[i][j]] += fC_lV_coef_[i][j] * (*psiVal)[i];
-            } else {
-                psiax[fC_lV_ind_[i][j]] -= fabs(fC_lV_coef_[i][j]) * (*psiVal)[i];
-            }
+            // } else {
+                // psiax[fC_lV_ind_[i][j]] -= fabs(fC_lV_coef_[i][j]) * (*psiVal)[i];
+            // }
         }
     }
     psiax_expr.setLinearCoefs(vars_.x, psiax);

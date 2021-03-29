@@ -56,7 +56,6 @@ public:
     int getNumLocalCutsAdded() {return num_local_cuts_added_;};
     int getNumUserBranches() {return num_user_branches_;};
     double getFUbGap() {return fub_gap_;};
-    double getFUbTime() {return fub_time_;};
     /* get current x solution */
     IloNumArray getxVals() {return xVals_;};
     /* get time duration */
@@ -189,13 +188,16 @@ private:
     int num_local_cuts_added_;
     int num_user_branches_;
     double fub_gap_;
-    double fub_time_;
 
     chrono::duration<double> ticToc_;
     double timelimit_;
 
     /* data for lazy callback */
     LazyData lazyData_;
+
+    bool use_heuristic_cb_;
+    double heuristic_time_limit_;
+    double elapsed_time_;
 };
 
 #endif //BILEVEL_MASTER_H
