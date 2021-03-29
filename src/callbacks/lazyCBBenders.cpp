@@ -135,14 +135,14 @@ void BendersLazyCallbackI::main(){
                cout << "tVal: " << tVal_ << " vs " << actual_tVal_ << endl;
                cout << "wVal_: " << wVal_ << endl;
 #endif
-                add(tVar_ >= termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_));
+                add(tVar_ >= termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_), IloCplex::CutManagement::UseCutPurge);
             }
         } else if (cut_type_ == 2) {
             if (fcheck_ >= tol_)
-                add(termfP_ <= 0);
+                add(termfP_ <= 0, IloCplex::CutManagement::UseCutPurge);
         } else if (cut_type_ == 3) {
             if (actual_tVal_ >= tol_)
-                add(termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_) <= 0);
+                add(termLf_ - wVal_ * (fobjval_ + (follower_.getbigM() - fobjval_) * indicatorTermx_) <= 0, IloCplex::CutManagement::UseCutPurge);
         } else {
 
             cout << "Incorrect cut type" << endl;
