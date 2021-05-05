@@ -16,7 +16,7 @@ void nodeSelectCallbackfObjI::main() {
       IloInt nNodes = getNnodes();
 
       // if ((count >= 3 && nNodes <= 25000) || (count >= 2 && nNodes > 25000))
-      if (count >= 5)
+      if (count >= 3)
       {
          num_user_branches_++;
          #ifdef DEBUG 
@@ -49,6 +49,7 @@ void nodeSelectCallbackfObjI::main() {
                *node_type = true;
                *node_id = num_selected_nodes;
                num_selected_nodes++;
+               count = 0;
             }
                
          } else 

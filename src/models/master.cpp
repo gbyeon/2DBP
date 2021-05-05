@@ -223,6 +223,11 @@ void Master::createProblem () {
 //    master.cplex.setParam(IloCplex::Param::MIP::Tolerances::Linearization, 1e-9);
     cplex_.setParam(IloCplex::Param::Simplex::Tolerances::Feasibility, 1e-9);
 
+    cplex_.setParam(IloCplex::Param::WorkMem, 12000);
+    cplex_.setParam(IloCplex::Param::MIP::Strategy::File, 3);
+    // cplex_.setParam(IloCplex::Param::MIP::Limits::Nodes, 0);
+    // cplex_.setParam(IloCplex::Param::MIP::Strategy::VariableSelect, CPX_VARSEL_STRONG);
+
     // cplex_.setParam(IloCplex::Param::Threads, 1);
 //    master.cplex.setParam(IloCplex::Param::Preprocessing::Presolve, IloFalse);
 
@@ -307,7 +312,7 @@ int Master::solve() {
 void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower, Data &data){
     
     use_heuristic_cb_ = true;
-    heuristic_time_limit_ = 300;
+    heuristic_time_limit_ = 150;
 
     auto start_t = chrono::system_clock::now();
     
