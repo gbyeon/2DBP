@@ -338,7 +338,7 @@ bool Hpp::solvefUb () {
     if (status_ == IloAlgorithm::Status::Optimal || status_ == IloAlgorithm::Status::Feasible) {
 
         fUB_ = cplex_.getBestObjValue();//cplex_.getObjValue();
-        cout << "f.M: " << fUB_ << endl;
+        // cout << "f.M: " << fUB_ << endl;
 
     } else {
 

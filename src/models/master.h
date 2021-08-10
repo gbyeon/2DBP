@@ -66,6 +66,11 @@ public:
         timelimit_ = timelimit;
         cplex_.setParam(IloCplex::Param::TimeLimit, timelimit_);
     };
+    void setParams(bool s, bool h, double ht){
+        use_numerically_stable_cut_cb_ = s;
+        use_heuristic_cb_ = h;
+        heuristic_time_limit_ = ht;
+    }
 
 private:
 
@@ -195,6 +200,7 @@ private:
     /* data for lazy callback */
     LazyData lazyData_;
 
+    bool use_numerically_stable_cut_cb_;
     bool use_heuristic_cb_;
     double heuristic_time_limit_;
     double elapsed_time_;

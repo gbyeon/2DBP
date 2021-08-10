@@ -40,9 +40,10 @@ int Data::read(string &filename) {
     /* number of leader and follower variables */
     n_ = mps.getNumCols(); 
     m_ = mps.getNumRows(); 
+#ifdef DATA_DEBUG
     cout << "n: " << n_ << endl;
     cout << "m: " << m_ << endl;
-
+#endif
     /* readauxfile */
     vector<bool> is_follower_var (n_, false);
     vector<bool> is_follower_constr (m_, false);
@@ -95,16 +96,19 @@ int Data::read(string &filename) {
 
     assert(obj_cnt == n_f_);
 
+        problemName_.assign(mps.getProblemName());
+#ifdef DATA_DEBUG
     cout << "filename: " << mps.getFileName() << endl;
-    problemName_.assign(mps.getProblemName());
     cout << "problem name: " << problemName_.c_str() << endl;
     // cout << "getObjectiveName: " << mps.getObjectiveName() << endl;
+#endif
 
     m_l_ = m_ - m_f_;
     n_l_ = n_ - n_f_;
+#ifdef DATA_DEBUG
     cout << "m_l: " << m_l_ << ", m_f: " << m_f_ << endl;
     cout << "n_l: " << n_l_ << ", n_f: " << n_f_ << endl;
-
+#endif
     /* if there is some leader variable that is integer and not binary, calculate the number of resultant binary vars
     * if there is a contraint that is equal to sense, calculate the number of resultant less than or equal to constrs 
     */ 
@@ -149,7 +153,9 @@ int Data::read(string &filename) {
     }
 
     n_ = n_l_ + n_f_;
+#ifdef DATA_DEBUG
     cout << "new n: " << n_ << endl;
+#endif
     assert(n_ == is_follower_var.size());
 
 #ifdef DATA_DEBUG
@@ -202,8 +208,8 @@ int Data::read(string &filename) {
             cout << ", scale " << scale_row[j][k] << endl;
         }
     }
-#endif
     cout << "new m: " << m_ << endl;
+#endif
 
     m_ = m_l_ + m_f_;
     assert(m_ == is_follower_constr.size());

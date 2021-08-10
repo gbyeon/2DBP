@@ -310,9 +310,6 @@ int Master::solve() {
 }
 
 void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFollower &leaderFollower, Data &data){
-    
-    use_heuristic_cb_ = true;
-    heuristic_time_limit_ = 150;
 
     auto start_t = chrono::system_clock::now();
     
@@ -331,7 +328,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         hpp_lp.loadProblem(data);
         hpp_lp.createProblem(true);
     }
-    
+
     /* calculate upper bound of follower obj val */
     if (hpp.solvefUb())
         follower.setfUb(hpp.getfUb());
@@ -355,7 +352,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         /* lazyCBBenders.h */
         BendersLazyCallbackI * cb_benders = new BendersLazyCallbackI(*env_, follower, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_);
         /* lazyCBBendersMC.h */
-        // cplex_.use(BendersLazyCallbackMC(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_));
+        BendersLazyCallbackMCI * cb_benders_mc = new BendersLazyCallbackMCI(*env_, followerMC, leaderFollower, vars_.x, vars_.t, dy_expr_, lazyData_);
         /* heuristicCBIncumbentUpdate.h */
         incumbentUpdateCallbackI * cb_incumbent_update = new incumbentUpdateCallbackI(*env_, vars_.x, lazyData_);
         /* usercutCBBendersMC.h */
@@ -365,7 +362,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         /* usercutCBfUBHeuristic.h */
         // cout << "use hpp with integrality conditions";
         // UserCallbackfUBHeuristicI * cb_fub_nu = new UserCallbackfUBHeuristicI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp, data);
-        cout << "use relaxed hpp";
+        /* use relaxed hpp for heuristic */
         UserCallbackfUBHeuristicI * cb_fub_heuristic = new UserCallbackfUBHeuristicI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, hpp_lp, data);
         /* usercutCBfUBhpp.h */
         // cplex_.use(BendersUserCallbackHpp(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, hpp));
@@ -381,7 +378,10 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         branchCallbackfObjI * cb_branch = new branchCallbackfObjI(*env_, vars_.x, vars_.y, dy_expr_, lazyData_, follower, &node_type, &node_id);
         
         /* callbacks to use */
-        cplex_.use(cb_benders);
+        if (use_numerically_stable_cut_cb_)
+            cplex_.use(cb_benders);
+        else cplex_.use(cb_benders_mc);
+            
         cplex_.use(cb_incumbent_update);
         if (use_heuristic_cb_)
         {
@@ -416,7 +416,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
 
         ticToc_ = chrono::system_clock::now() - start_t;
         elapsed_time_ = ticToc_.count();
-        setTimeLimit(3600 - elapsed_time_);
+        setTimeLimit(timelimit_ - elapsed_time_);
         
         if (!cplex_.solve()) {
             env_->error() << "Failed to optimize master." << endl;
@@ -435,7 +435,7 @@ void Master::solveCallback(Follower &follower, FollowerMC &followerMC, LeaderFol
         gap_ = cplex_.getMIPRelativeGap();
 
         ticToc_ = chrono::system_clock::now() - start_t;
-
+    
         delete cb_benders;
         delete cb_incumbent_update;
         delete cb_fub;
