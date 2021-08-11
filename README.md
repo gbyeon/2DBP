@@ -48,7 +48,7 @@ Instances are available in the `instances` folder. A problem instance should pro
 
 ## Key Publications
 - Geunyeong Byeon and Pascal Van Hentenryck. [Benders Subproblem Decomposition for Bilevel Problems with Convex Follower.](https://arxiv.org/pdf/1801.03520) *Arxiv*, 2019
-- Geunyeong Byeon and Pascal Van Hentenryck. [Unit Commitment with Gas Network Awareness" *IEEE Transactions on Power Systems.](https://ieeexplore.ieee.org/abstract/document/8844828) 35.2 (2019): 1327-1339.
+- Geunyeong Byeon and Pascal Van Hentenryck. [Unit Commitment with Gas Network Awareness" *IEEE Transactions on Power Systems*.](https://ieeexplore.ieee.org/abstract/document/8844828) 35.2 (2019): 1327-1339.
 
 ## Acknowledgements
-This repository is initially developed as part of a work that was partly supported by an NSF CRISP Award (NSF-1638331).
+This repository was initially developed as part of a work that was partly supported by an NSF CRISP Award (NSF-1638331).
