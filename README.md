@@ -1,4 +1,4 @@
-# Dedicated Benders Decomposition for Bilevel Problems with Convex Follower
+# Dedicated Benders Decomposition for Bilevel Problems with Convex Follower (2DBP)
   
 This repository provides an implementation of a dedicated Benders decomposition method for bilevel optimization problems with convex follower, proposed in the following paper:
 
