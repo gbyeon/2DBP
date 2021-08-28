@@ -2,7 +2,7 @@
   
 This repository provides an implementation of a dedicated Benders decomposition method for bilevel optimization problems with convex follower, proposed in the following paper:
 
-- Geunyeong Byeon and Pascal Van Hentenryck. [Benders Subproblem Decomposition for Bilevel Problems with Convex Follower.](https://arxiv.org/pdf/1801.03520) *Arxiv*, 2019
+- Geunyeong Byeon and Pascal Van Hentenryck. [Benders Subproblem Decomposition for Bilevel Problems with Convex Follower.](https://arxiv.org/pdf/1801.03520) *INFORMS Journal on Computing*, To appear
 
 The method features a Benders subproblem decomposition scheme and a variety of acceleration schemes (e.g., numerically stable Benders cuts and a heuristic for finding an incumbent solution). The implementation is written in C++ language and utilizes an off-the-shelf solver, IBM CPLEX Optimizer. 
 
@@ -47,8 +47,8 @@ Optional parameters
 Instances are available in the `instances` folder. A problem instance should provide two files with the same file name and different extensions---`mps` and `aux`; This is in accordance with a Bilevel Optimization Problem Library and details on the file format can be found [here.](https://coral.ise.lehigh.edu/data-sets/bilevel-instances/)
 
 ## Key Publications
-- Geunyeong Byeon and Pascal Van Hentenryck. [Benders Subproblem Decomposition for Bilevel Problems with Convex Follower.](https://arxiv.org/pdf/1801.03520) *Arxiv*, 2019
-- Geunyeong Byeon and Pascal Van Hentenryck. [Unit Commitment with Gas Network Awareness" *IEEE Transactions on Power Systems*.](https://ieeexplore.ieee.org/abstract/document/8844828) 35.2 (2019): 1327-1339.
+- Geunyeong Byeon and Pascal Van Hentenryck. [Benders Subproblem Decomposition for Bilevel Problems with Convex Follower.](https://arxiv.org/pdf/1801.03520) *INFORMS Journal on Computing*. To appear
+- Geunyeong Byeon and Pascal Van Hentenryck. [Unit Commitment with Gas Network Awareness.](https://ieeexplore.ieee.org/abstract/document/8844828) *IEEE Transactions on Power Systems*. 35.2 (2019): 1327-1339.
 
 ## Acknowledgements
 This repository was initially developed as part of a work that was partly supported by an NSF CRISP Award (NSF-1638331).
